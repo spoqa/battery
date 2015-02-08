@@ -9,16 +9,11 @@ import com.spoqa.battery.exceptions.IncompatibleTypeException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.TimeZone;
 
-final public class CodecUtils {
+public final class CodecUtils {
     public static final String TAG = "CodecUtils";
 
     private static final Class PRIMITIVE_TYPE_STRING = String.class;
@@ -34,7 +29,6 @@ final public class CodecUtils {
     private static final Class PRIMITIVE_TYPE_BOOLEAN_BOXED = Boolean.class;
     private static final Class PRIMITIVE_TYPE_LIST = List.class;
     private static final Class PRIMITIVE_TYPE_MAP = Map.class;
-    private static final Class PRIMITIVE_TYPE_DATETIME = Date.class;
 
     public static Iterable<KeyValuePair<String, Object>> traverseObject(
             Class<Annotation> annotationFilter, Object o) {
@@ -139,14 +133,6 @@ final public class CodecUtils {
 
     public static boolean isMap(Class clazz) {
         return isSubclassOf(clazz, PRIMITIVE_TYPE_MAP);
-    }
-
-    public static boolean isDateTime(Class clazz) {
-        return isSubclassOf(clazz, PRIMITIVE_TYPE_DATETIME);
-    }
-
-    public static boolean isDateTime(Object object) {
-        return isSubclassOf(object.getClass(), PRIMITIVE_TYPE_DATETIME);
     }
 
     public static boolean isPrimitive(Class clazz) {
@@ -288,39 +274,6 @@ final public class CodecUtils {
         } else {
             throw new IncompatibleTypeException(fieldName, Boolean.class.getName(), (String) o);
         }
-    }
-
-    public static Date parseDateTime(String fieldName, Object o) throws IncompatibleTypeException {
-        if (o instanceof String) {
-            try {
-                return parseIso8601((String) o);
-            } catch (ParseException e) {
-                Logger.error(TAG, "Invalid ISO8601 format: " + (String) o);
-                return null;
-            }
-        } else if (o instanceof Date) {
-            return (Date) o;
-        } else {
-            throw new IncompatibleTypeException(fieldName, Date.class.getName(), (String) o);
-        }
-    }
-
-    private static Date parseIso8601(String dateString) throws ParseException {
-        String s = dateString.replace("Z", "+00:00");
-        try {
-            s = s.substring(0, 29) + s.substring(30);
-        } catch (IndexOutOfBoundsException e) {
-            throw new ParseException("Invalid length", 0);
-        }
-
-        return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ").parse(s);
-    }
-
-    public static String toIso8601(Date date) {
-        TimeZone tz = TimeZone.getDefault();
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
-        df.setTimeZone(tz);
-        return df.format(date);
     }
 
 }

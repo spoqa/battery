@@ -1,6 +1,6 @@
 package com.spoqa.battery;
 
-final public class Logger {
+public final class Logger {
 
     static public interface LoggerImpl {
         abstract void debug(String tag, String msg);

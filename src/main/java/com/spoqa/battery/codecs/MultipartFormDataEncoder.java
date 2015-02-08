@@ -28,4 +28,9 @@ public class MultipartFormDataEncoder implements RequestSerializer {
     public String serializationContentType() {
         return MIME_TYPE;
     }
+
+    @Override
+    public boolean supportsCompositeType() {
+        return false;
+    }
 }

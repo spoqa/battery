@@ -50,8 +50,6 @@ public class UrlEncodedFormEncoder implements RequestSerializer {
                     value = ((Double) element).toString();
                 else if (CodecUtils.isBoolean(type))
                     value = ((Boolean) element).toString();
-                else if (CodecUtils.isDateTime(type))
-                    value = CodecUtils.toIso8601((Date) element);
                 else if (CodecUtils.isInteger(type))
                     value = ((Integer) element).toString();
                 else if (CodecUtils.isLong(type))
@@ -88,5 +86,10 @@ public class UrlEncodedFormEncoder implements RequestSerializer {
     @Override
     public String serializationContentType() {
         return MIME_TYPE;
+    }
+
+    @Override
+    public boolean supportsCompositeType() {
+        return false;
     }
 }

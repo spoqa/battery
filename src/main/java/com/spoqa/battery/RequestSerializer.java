@@ -13,4 +13,6 @@ public interface RequestSerializer {
 
     public String serializationContentType();
 
+    public boolean supportsCompositeType();
+
 }

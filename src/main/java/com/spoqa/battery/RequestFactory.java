@@ -14,8 +14,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-abstract public class RequestFactory {
-    static private final String TAG = "RequestFactory";
+public final class RequestFactory {
+    private static final String TAG = "RequestFactory";
 
     public static HttpRequest createRequest(ExecutionContext context, Object object)
             throws SerializationException, ContextException {
