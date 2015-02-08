@@ -11,6 +11,7 @@ import com.android.volley.toolbox.HurlStack;
 import com.android.volley.toolbox.Volley;
 
 import com.spoqa.battery.ExecutionContext;
+import com.spoqa.battery.Logger;
 
 public class AndroidExecutionContext extends ExecutionContext<Context> {
 
@@ -20,6 +21,9 @@ public class AndroidExecutionContext extends ExecutionContext<Context> {
         super();
         HurlStack stack = new OkHttpStack();
         mRequestQueue = Volley.newRequestQueue(androidApplicationContext, stack);
+
+        /* set up android logger */
+        Logger.registerLogger(new AndroidLogger());
     }
 
     public RequestQueue requestQueue() {

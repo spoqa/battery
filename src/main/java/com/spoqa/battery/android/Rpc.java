@@ -19,6 +19,7 @@ import com.spoqa.battery.HttpRequest;
 import com.spoqa.battery.Logger;
 import com.spoqa.battery.OnResponse;
 import com.spoqa.battery.RequestFactory;
+import com.spoqa.battery.annotations.RpcObject;
 import com.spoqa.battery.exceptions.ContextException;
 import com.spoqa.battery.exceptions.DeserializationException;
 import com.spoqa.battery.exceptions.ResponseValidationException;
@@ -48,12 +49,16 @@ final public class Rpc {
             return;
         }
 
+        final RpcObject rpcObjectDecl = rpcObject.getClass().getAnnotation(RpcObject.class);
         final FieldNameTransformer nameTransformer = request.getNameTransformer();
         Response.Listener<ResponseDelegate> onVolleyResponse = new Response.Listener<ResponseDelegate>() {
             @Override
             public void onResponse(ResponseDelegate s) {
                 try {
-                    DeserializerFactory.deserialize(s.contentType(), s.data(), rpcObject, nameTransformer);
+                    String contentType = rpcObjectDecl.expectedContentType();
+                    if (contentType == null || contentType.length() == 0)
+                        contentType = s.contentType();
+                    DeserializerFactory.deserialize(contentType, s.data(), rpcObject, nameTransformer);
 
                     if (rpcContext.getResponseValidator() != null) {
                         try {

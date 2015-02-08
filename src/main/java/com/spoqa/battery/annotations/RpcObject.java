@@ -26,4 +26,5 @@ public @interface RpcObject {
     public String[] uriParams() default {};
     public Class requestSerializer() default UrlEncodedFormEncoder.class;
     public Class nameTransformer() default DefaultTransformer.class;
+    public String expectedContentType() default "";
 }

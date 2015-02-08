@@ -5,6 +5,7 @@
 package com.spoqa.battery;
 
 import com.spoqa.battery.annotations.Response;
+import com.spoqa.battery.annotations.ResponseObject;
 import com.spoqa.battery.codecs.JsonCodec;
 import com.spoqa.battery.exceptions.DeserializationException;
 import com.spoqa.battery.exceptions.IncompatibleTypeException;
@@ -51,16 +52,43 @@ public final class DeserializerFactory {
             throw new DeserializationException(e);
         }
 
-        deserializeObject(sDeserializerMap.get(mime), input, object, transformer);
+        List<Field> responseObjects = CodecUtils.getAnnotatedFields(ResponseObject.class, object.getClass());
+
+        if (responseObjects == null || responseObjects.size() == 0) {
+            deserializeObject(sDeserializerMap.get(mime), input, object, transformer, true);
+        } else if (responseObjects.size() > 1) {
+            RpcException e = new RpcException(String.format("Object '%1$s' has more than one ResponseObject declarations",
+                    object.getClass().getName()));
+            throw new DeserializationException(e);
+        } else {
+            Field destField = responseObjects.get(0);
+            try {
+                List<Field> responseFields = CodecUtils.getAnnotatedFields(Response.class, object.getClass());
+                if (responseFields != null && responseFields.size() > 0) {
+                    RpcException e = new RpcException(
+                            String.format("Object '%1$s' has both ResponseObject and Response declarations",
+                                    object.getClass().getName()));
+                    throw new DeserializationException(e);
+                }
+
+                Object dest = destField.getType().newInstance();
+                deserializeObject(sDeserializerMap.get(mime), input, dest, transformer, false);
+                destField.set(object, dest);
+            } catch (InstantiationException e) {
+                throw new DeserializationException(e);
+            } catch (IllegalAccessException e) {
+                throw new DeserializationException(e);
+            }
+        }
     }
 
     private static void deserializeObject(ResponseDeserializer deserializer, String input, Object object,
-                                          FieldNameTransformer transformer)
+                                          FieldNameTransformer transformer, boolean filterByAnotation)
             throws DeserializationException {
         /* Let's assume the root element is always an object */
         Object internalObject = deserializer.parseInput(input);
 
-        visitObject(deserializer, internalObject, object, transformer, true);
+        visitObject(deserializer, internalObject, object, transformer, filterByAnotation);
     }
 
     private static void visitObject(ResponseDeserializer deserializer, Object internalObject,
@@ -141,7 +169,7 @@ public final class DeserializerFactory {
                                     fieldName));
                             continue;
                         }
-                        if (deserializer.isArray(value.getClass())) {
+                        if (!deserializer.isArray(value.getClass())) {
                             Logger.error(TAG, String.format("internal class of '%1$s' is not an array",
                                     fieldName));
                         }
@@ -224,10 +252,12 @@ public final class DeserializerFactory {
         for (String frag : frags) {
             if (++i == frags.length) {
                 // if the last object
+                if (!deserializer.containsChild(internalObject, frag))
+                    throw new NoSuchElementException();
                 return deserializer.queryObjectChild(internalObject, frag);
             } else {
                 internalObject = deserializer.queryObjectChild(internalObject, frag);
-                if (internalObject == null || deserializer.isObject(internalObject.getClass()))
+                if (internalObject == null)
                     break;
             }
         }

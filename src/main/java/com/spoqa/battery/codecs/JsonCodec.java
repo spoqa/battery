@@ -131,7 +131,7 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
                 return new Iterator<Object>() {
                     @Override
                     public boolean hasNext() {
-                        return index >= jsonArray.length();
+                        return index < jsonArray.length();
                     }
 
                     @Override
