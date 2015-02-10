@@ -16,9 +16,11 @@ import com.spoqa.battery.Logger;
 public class AndroidExecutionContext extends ExecutionContext<Context> {
 
     private RequestQueue mRequestQueue;
+    private Context mAndroidContext;
 
     public AndroidExecutionContext(Context androidApplicationContext) {
         super();
+        mAndroidContext = androidApplicationContext;
         HurlStack stack = new OkHttpStack();
         mRequestQueue = Volley.newRequestQueue(androidApplicationContext, stack);
 
@@ -28,6 +30,10 @@ public class AndroidExecutionContext extends ExecutionContext<Context> {
 
     public RequestQueue requestQueue() {
         return mRequestQueue;
+    }
+
+    public Context androidApplicationContext() {
+        return mAndroidContext;
     }
 
 }

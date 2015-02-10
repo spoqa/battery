@@ -30,9 +30,10 @@ final public class Rpc {
 
     private static final String TAG = "Rpc";
 
-    public static <T> void invokeAsync(
-            final Context context, final AndroidExecutionContext rpcContext,
+    public static <T> void invokeAsync(final AndroidExecutionContext rpcContext,
             final T rpcObject, final OnResponse<T> onResponse) {
+        final Context context = rpcContext.androidApplicationContext();
+
         HttpRequest request = null;
         try {
             request = RequestFactory.createRequest(rpcContext, rpcObject);
@@ -85,8 +86,9 @@ final public class Rpc {
                 Logger.error(TAG, "Error while RPC call: " + volleyError.getMessage());
                 if (Config.DEBUG_DUMP_RESPONSE) {
                     try {
-                        if (volleyError != null && volleyError.networkResponse != null)
-                            Logger.error(TAG, "Error response: " + new String(volleyError.networkResponse.data, "utf-8"));
+                        if (volleyError.networkResponse != null)
+                            Logger.error(TAG, "Error response: " +
+                                    new String(volleyError.networkResponse.data, "utf-8"));
                     } catch (UnsupportedEncodingException e) {}
                 }
 
