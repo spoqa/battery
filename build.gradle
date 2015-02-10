@@ -1,9 +1,10 @@
 buildscript {
     repositories {
-        mavenCentral()
+        jcenter()
     }
+
     dependencies {
-        classpath 'com.android.tools.build:gradle:1.0.0' 
+        classpath 'com.android.tools.build:gradle:1.0.1' 
     }
 }
 
@@ -11,16 +12,20 @@ apply plugin: 'android-library'
 
 android {
     compileSdkVersion 21
-    buildToolsVersion '21.1.2'
+    buildToolsVersion "21.1.2"
 
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_6
-        targetCompatibility JavaVersion.VERSION_1_6
+    lintOptions {
+        abortOnError false
     }
 }
 
+repositories {
+    jcenter()
+}
+
 dependencies {
-    compile 'com.mcxiaoke.volley:library:1.0.+'
-    compile 'com.squareup.okhttp:okhttp:2.1.0'
-    compile 'com.squareup.okhttp:okhttp-urlconnection:2.1.+'
+    compile 'com.mcxiaoke.volley:library:1.0.10'
+    compile 'com.squareup.okhttp:okhttp:2.2.0'
+    compile 'com.squareup.okhttp:okhttp-urlconnection:2.2.0'
+    compile 'io.reactivex:rxjava:1.0.5'
 }
