@@ -9,7 +9,9 @@ import com.spoqa.battery.annotations.RpcObject;
 import com.spoqa.battery.exceptions.ContextException;
 import com.spoqa.battery.exceptions.SerializationException;
 
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
+import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -106,17 +108,20 @@ public final class RequestFactory {
                     Field field = self.getField(paramName);
                     Object fieldObject = field.get(object);
                     if (fieldObject == null ||
-                            (!CodecUtils.isString(fieldObject) &&
-                            !CodecUtils.isInteger(fieldObject) &&
-                            !CodecUtils.isBoolean(fieldObject) &&
-                            !CodecUtils.isFloat(fieldObject) &&
-                            !CodecUtils.isDouble(fieldObject) &&
-                            !CodecUtils.isLong(fieldObject))) {
+                            (!CodecUtils.isPrimitive(fieldObject.getClass()) &&
+                             !CodecUtils.isString(fieldObject))) {
                         Logger.error(TAG, String.format("Type '%1$s' of field '%2$s' could not be built into URI.",
-                                field.getClass().getName(), paramName));
+                                fieldObject.getClass().getName(), paramName));
                         return null;
                     }
-                    parameters[i] = fieldObject;
+
+                    if (fieldObject instanceof String) {
+                        try {
+                            parameters[i] = URLEncoder.encode((String) fieldObject, "utf-8");
+                        } catch (UnsupportedEncodingException e) {}
+                    } else {
+                        parameters[i] = fieldObject;
+                    }
                 } catch (NoSuchFieldException e) {
                     Logger.error(TAG, String.format("No such field '%1$s' in class %2$s", paramName, self.getName()));
                     return null;

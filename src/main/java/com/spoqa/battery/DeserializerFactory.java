@@ -40,8 +40,10 @@ public final class DeserializerFactory {
         }
     }
 
-    public static void deserialize(String mime, String input, Object object,
+    public static void deserialize(String contentType, String input, Object object,
                                    FieldNameTransformer transformer) throws DeserializationException {
+        String mime = extractMime(contentType);
+
         if (Config.DEBUG_DUMP_RESPONSE) {
             Logger.debug(TAG, "Mime: " + mime);
             Logger.debug(TAG, "Response: " + input);
@@ -82,13 +84,20 @@ public final class DeserializerFactory {
         }
     }
 
+    private static String extractMime(String contentType) {
+        String[] parts = contentType.split(";");
+        if (parts.length == 0)
+            return null;
+        return parts[0].trim();
+    }
+
     private static void deserializeObject(ResponseDeserializer deserializer, String input, Object object,
-                                          FieldNameTransformer transformer, boolean filterByAnotation)
+                                          FieldNameTransformer transformer, boolean filterByAnnotation)
             throws DeserializationException {
         /* Let's assume the root element is always an object */
         Object internalObject = deserializer.parseInput(input);
 
-        visitObject(deserializer, internalObject, object, transformer, filterByAnotation);
+        visitObject(deserializer, internalObject, object, transformer, filterByAnnotation);
     }
 
     private static void visitObject(ResponseDeserializer deserializer, Object internalObject,
