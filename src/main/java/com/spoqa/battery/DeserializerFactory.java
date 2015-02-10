@@ -220,6 +220,7 @@ public final class DeserializerFactory {
 
         try {
             Method add = List.class.getDeclaredMethod("add", Object.class);
+            Integer index = 0;
             for (Object element : deserializer.queryArrayChildren(internalArray)) {
                 if (CodecUtils.isList(innerType)) {
                     /* TODO implement nested list */
@@ -230,7 +231,27 @@ public final class DeserializerFactory {
                     visitObject(deserializer, element, o, transformer, false);
                     add.invoke(output, o);
                 } else {
-                    add.invoke(output, element);
+                    Object newElem = element;
+                    try {
+                        if (CodecUtils.isString(innerType))
+                            newElem = CodecUtils.parseString(element);
+                        else if (CodecUtils.isInteger(innerType))
+                            newElem = CodecUtils.parseInteger(index.toString(), element);
+                        else if (CodecUtils.isBoolean(innerType))
+                            newElem = CodecUtils.parseBoolean(index.toString(), element);
+                        else if (CodecUtils.isDouble(innerType))
+                            newElem = CodecUtils.parseDouble(index.toString(), element);
+                        else if (CodecUtils.isFloat(innerType))
+                            newElem = CodecUtils.parseFloat(index.toString(), element);
+                        else if (CodecUtils.isLong(innerType))
+                            newElem = CodecUtils.parseLong(index.toString(), element);
+                    } catch (IncompatibleTypeException e) {
+                        throw new DeserializationException(e);
+                    }
+
+                    add.invoke(output, newElem);
+
+                    ++index;
                 }
             }
         } catch (NoSuchMethodException e) {
