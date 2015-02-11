@@ -26,6 +26,10 @@ import com.spoqa.battery.exceptions.ResponseValidationException;
 import com.spoqa.battery.exceptions.RpcException;
 import com.spoqa.battery.exceptions.SerializationException;
 
+import rx.Observable;
+import rx.Subscriber;
+import rx.subjects.PublishSubject;
+
 final public class Rpc {
 
     private static final String TAG = "Rpc";
@@ -110,4 +114,23 @@ final public class Rpc {
         rpcContext.requestQueue().add(req);
     }
 
+    public static <T> Observable<T> invokeRx(final AndroidExecutionContext rpcContext,
+                                             final T rpcObject) {
+        final PublishSubject<T> subject = PublishSubject.create();
+        
+        invokeAsync(rpcContext, rpcObject, new OnResponse<T>() {
+            @Override
+            public void onResponse(T responseBody) {
+                subject.onNext(responseBody);
+                subject.onCompleted();
+            }
+
+            @Override
+            public void onFailure(Throwable why) {
+                onFailure(why);
+            }
+        });
+        
+        return subject.asObservable();
+    }
 }
