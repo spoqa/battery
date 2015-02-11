@@ -14,7 +14,7 @@ import java.io.UnsupportedEncodingException;
 
 import com.spoqa.battery.Config;
 import com.spoqa.battery.DeserializerFactory;
-import com.spoqa.battery.FieldNameTransformer;
+import com.spoqa.battery.FieldNameTranslator;
 import com.spoqa.battery.HttpRequest;
 import com.spoqa.battery.Logger;
 import com.spoqa.battery.OnResponse;
@@ -51,7 +51,7 @@ final public class Rpc {
         }
 
         final RpcObject rpcObjectDecl = rpcObject.getClass().getAnnotation(RpcObject.class);
-        final FieldNameTransformer nameTransformer = request.getNameTransformer();
+        final FieldNameTranslator nameTranslator = request.getFieldNameTranslator();
         Response.Listener<ResponseDelegate> onVolleyResponse = new Response.Listener<ResponseDelegate>() {
             @Override
             public void onResponse(ResponseDelegate s) {
@@ -59,7 +59,7 @@ final public class Rpc {
                     String contentType = rpcObjectDecl.expectedContentType();
                     if (contentType == null || contentType.length() == 0)
                         contentType = s.contentType();
-                    DeserializerFactory.deserialize(contentType, s.data(), rpcObject, nameTransformer);
+                    DeserializerFactory.deserialize(contentType, s.data(), rpcObject, nameTranslator);
 
                     if (rpcContext.getResponseValidator() != null) {
                         try {

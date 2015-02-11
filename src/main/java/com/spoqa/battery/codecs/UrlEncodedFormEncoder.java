@@ -1,7 +1,7 @@
 package com.spoqa.battery.codecs;
 
 import com.spoqa.battery.CodecUtils;
-import com.spoqa.battery.FieldNameTransformer;
+import com.spoqa.battery.FieldNameTranslator;
 import com.spoqa.battery.Logger;
 import com.spoqa.battery.RequestSerializer;
 import com.spoqa.battery.annotations.RequestBody;
@@ -10,7 +10,6 @@ import com.spoqa.battery.exceptions.SerializationException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.net.URLEncoder;
-import java.util.Date;
 import java.util.List;
 
 public class UrlEncodedFormEncoder implements RequestSerializer {
@@ -23,7 +22,7 @@ public class UrlEncodedFormEncoder implements RequestSerializer {
     }
 
     @Override
-    public byte[] serializeObject(Object o, FieldNameTransformer transformer) throws SerializationException {
+    public byte[] serializeObject(Object o, FieldNameTranslator translator) throws SerializationException {
         StringBuilder sb = new StringBuilder();
 
         List<Field> fields = CodecUtils.getAnnotatedFields(RequestBody.class, o.getClass());
@@ -36,7 +35,7 @@ public class UrlEncodedFormEncoder implements RequestSerializer {
             if (annotation.fieldName().length() > 0)
                 foreignName = annotation.fieldName();
             else
-                foreignName = transformer.localToRemote(localName);
+                foreignName = translator.localToRemote(localName);
             String value = "";
 
             try {

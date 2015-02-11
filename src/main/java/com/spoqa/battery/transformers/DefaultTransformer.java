@@ -5,22 +5,20 @@
 package com.spoqa.battery.transformers;
 
 import com.spoqa.battery.FieldNameTransformer;
+import com.spoqa.battery.StringUtils;
+
+import java.util.Arrays;
+import java.util.List;
 
 public class DefaultTransformer implements FieldNameTransformer {
 
-    private static final String TAG = "DefaultTransformer";
-
-    public DefaultTransformer() {
-
+    @Override
+    public List<String> decode(String key) {
+        return Arrays.asList(key.split(" "));
     }
 
     @Override
-    public String localToRemote(String key) {
-        return key; /* do not transform */
-    }
-
-    @Override
-    public String remoteToLocal(String key) {
-        return key; /* do not transform */
+    public String encode(List<String> parts) {
+        return StringUtils.join(parts, " ");
     }
 }

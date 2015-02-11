@@ -30,7 +30,7 @@ public class HttpRequest {
     private Map<String, String> mHeaders;
     private Map<String, Object> mParams;
     private byte[] mRequestBody;
-    private FieldNameTransformer mTransformer;
+    private FieldNameTranslator mFieldNameTranslator;
     private Object mRequestObject;
 
     public HttpRequest(String uri) {
@@ -94,8 +94,8 @@ public class HttpRequest {
             mParams.remove(key);
     }
 
-    public void setNameTransformer(FieldNameTransformer transformer) {
-        mTransformer = transformer;
+    public void setNameTranslator(FieldNameTranslator fieldNameTranslator) {
+        mFieldNameTranslator = fieldNameTranslator;
     }
 
     public byte[] getRequestBody() {
@@ -110,8 +110,8 @@ public class HttpRequest {
         return mMethod;
     }
 
-    public FieldNameTransformer getNameTransformer() {
-        return mTransformer;
+    public FieldNameTranslator getFieldNameTranslator() {
+        return mFieldNameTranslator;
     }
 
     public String getUri() {

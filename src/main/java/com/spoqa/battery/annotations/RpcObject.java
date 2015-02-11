@@ -6,6 +6,7 @@ package com.spoqa.battery.annotations;
 
 import com.spoqa.battery.HttpRequest;
 import com.spoqa.battery.codecs.UrlEncodedFormEncoder;
+import com.spoqa.battery.transformers.CamelCaseTransformer;
 import com.spoqa.battery.transformers.DefaultTransformer;
 
 import java.lang.annotation.ElementType;
@@ -25,6 +26,7 @@ public @interface RpcObject {
     public String uri();
     public String[] uriParams() default {};
     public Class requestSerializer() default UrlEncodedFormEncoder.class;
-    public Class nameTransformer() default DefaultTransformer.class;
+    public Class localName() default CamelCaseTransformer.class;
+    public Class remoteName() default NULL.class;
     public String expectedContentType() default "";
 }

@@ -34,9 +34,16 @@ public final class RequestFactory {
             return null;
         }
 
-        FieldNameTransformer transformer;
+        FieldNameTransformer remote, local;
         try {
-            transformer = (FieldNameTransformer) annotation.nameTransformer().newInstance();
+            if (annotation.remoteName() == RpcObject.NULL.class)
+                remote = null;
+            else
+                remote = (FieldNameTransformer) annotation.remoteName().newInstance();
+            if (annotation.localName() == RpcObject.NULL.class)
+                local = null;
+            else
+                local = (FieldNameTransformer) annotation.localName().newInstance();
         } catch (InstantiationException e) {
             e.printStackTrace();
             Logger.error(TAG, "Failed to create request.");
@@ -47,16 +54,18 @@ public final class RequestFactory {
             return null;
         }
 
+        FieldNameTranslator nameTranslator = new FieldNameTranslator(remote, local);
+
         Map<String, Object> parameters = new HashMap<String, Object>();
         int method = annotation.method();
-        String uri = buildUri(context, object, annotation, parameters, transformer);
+        String uri = buildUri(context, object, annotation, parameters, nameTranslator);
         if (uri == null) {
             Logger.error(TAG, "Failed to create request.");
             return null;
         }
 
         HttpRequest request = new HttpRequest(method, uri);
-        request.setNameTransformer(transformer);
+        request.setNameTranslator(nameTranslator);
         request.putParameters(parameters);
         request.setRequestObject(object);
 
@@ -68,7 +77,7 @@ public final class RequestFactory {
                 try {
                     RequestSerializer serializer = (RequestSerializer) serializerCls.newInstance();
                     request.putHeader(HttpRequest.HEADER_CONTENT_TYPE, serializer.serializationContentType());
-                    request.setRequestBody(serializer.serializeObject(object, transformer));
+                    request.setRequestBody(serializer.serializeObject(object, nameTranslator));
                 } catch (InstantiationException e) {
                     e.printStackTrace();
                 } catch (IllegalAccessException e) {
@@ -85,7 +94,7 @@ public final class RequestFactory {
     }
 
     private static String buildUri(ExecutionContext context, Object object, RpcObject rpcObjectDecl,
-                                   Map<String, Object> params, FieldNameTransformer transformer) {
+                                   Map<String, Object> params, FieldNameTranslator translator) {
         String uri = rpcObjectDecl.uri();
         if (!uri.startsWith("http://") && !uri.startsWith("https://")) {
             if (context.getDefaultUriPrefix() == null) {
@@ -156,7 +165,7 @@ public final class RequestFactory {
             if (annotation.fieldName().length() > 0)
                 fieldName = annotation.fieldName();
             else
-                fieldName = transformer.localToRemote(fieldName);
+                fieldName = translator.localToRemote(fieldName);
 
             try {
                 params.put(fieldName, field.get(object));

@@ -4,9 +4,11 @@
 
 package com.spoqa.battery;
 
+import java.util.List;
+
 public interface FieldNameTransformer {
 
-    public String localToRemote(String key);
-    public String remoteToLocal(String key);
+    public List<String> decode(String input);
+    public String encode(List<String> parts);
 
 }

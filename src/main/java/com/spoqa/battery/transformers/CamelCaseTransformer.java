@@ -10,7 +10,7 @@ import com.spoqa.battery.StringUtils;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PascalCaseTransformer implements FieldNameTransformer {
+public class CamelCaseTransformer implements FieldNameTransformer {
 
     @Override
     public List<String> decode(String input) {
@@ -25,7 +25,10 @@ public class PascalCaseTransformer implements FieldNameTransformer {
         List<String> output = new ArrayList<String>();
 
         for (int i = 0; i < parts.size(); ++i) {
-            output.add(StringUtils.uppercaseFirst(parts.get(i)));
+            if (i == 0)
+                output.add(parts.get(i));
+            else
+                output.add(StringUtils.uppercaseFirst(parts.get(i)));
         }
 
         return StringUtils.join(output, "");

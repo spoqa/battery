@@ -5,16 +5,11 @@
 package com.spoqa.battery.codecs;
 
 import com.spoqa.battery.CodecUtils;
-import com.spoqa.battery.Config;
-import com.spoqa.battery.FieldNameTransformer;
-import com.spoqa.battery.Logger;
+import com.spoqa.battery.FieldNameTranslator;
 import com.spoqa.battery.RequestSerializer;
 import com.spoqa.battery.ResponseDeserializer;
 import com.spoqa.battery.annotations.RequestBody;
-import com.spoqa.battery.annotations.Response;
 import com.spoqa.battery.exceptions.DeserializationException;
-import com.spoqa.battery.exceptions.IncompatibleTypeException;
-import com.spoqa.battery.exceptions.MissingFieldException;
 import com.spoqa.battery.exceptions.SerializationException;
 
 import org.json.JSONArray;
@@ -23,17 +18,9 @@ import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
 
 public class JsonCodec implements RequestSerializer, ResponseDeserializer {
-    private static final String TAG = "JsonCodec";
-
     public static final String MIME_TYPE = "application/json";
 
     public JsonCodec() {
@@ -43,7 +30,7 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
     /* serializer */
 
     @Override
-    public byte[] serializeObject(Object o, FieldNameTransformer transformer)
+    public byte[] serializeObject(Object o, FieldNameTranslator translator)
             throws SerializationException {
         JSONObject body = visitObject(o);
 

@@ -4,7 +4,7 @@
 
 package com.spoqa.battery.codecs;
 
-import com.spoqa.battery.FieldNameTransformer;
+import com.spoqa.battery.FieldNameTranslator;
 import com.spoqa.battery.RequestSerializer;
 
 public class MultipartFormDataEncoder implements RequestSerializer {
@@ -18,7 +18,7 @@ public class MultipartFormDataEncoder implements RequestSerializer {
     }
 
     @Override
-    public byte[] serializeObject(Object o, FieldNameTransformer transformer) {
+    public byte[] serializeObject(Object o, FieldNameTranslator translator) {
 
 
         return null;
