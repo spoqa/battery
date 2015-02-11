@@ -25,7 +25,7 @@ public class UrlEncodedFormEncoder implements RequestSerializer {
     public byte[] serializeObject(Object o, FieldNameTranslator translator) throws SerializationException {
         StringBuilder sb = new StringBuilder();
 
-        List<Field> fields = CodecUtils.getAnnotatedFields(RequestBody.class, o.getClass());
+        List<Field> fields = CodecUtils.getAnnotatedFields(null, RequestBody.class, o.getClass());
         boolean first = true;
         for (Field f : fields) {
             RequestBody annotation = f.getAnnotation(RequestBody.class);

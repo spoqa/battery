@@ -31,10 +31,10 @@ public final class CodecUtils {
     private static final Class PRIMITIVE_TYPE_MAP = Map.class;
 
     public static Iterable<KeyValuePair<String, Object>> traverseObject(
-            Class<Annotation> annotationFilter, Object o) {
+            ReflectionCache cache, Class<Annotation> annotationFilter, Object o) {
         List<KeyValuePair<String, Object>> list = new ArrayList<KeyValuePair<String, Object>>();
 
-        for (Field field : getAllFields(o.getClass())) {
+        for (Field field : getAllFields(cache, o.getClass())) {
             if (annotationFilter != null && field.getAnnotation(annotationFilter) == null) {
                 /* if annotationFilter is given, filter by annotations */
                 continue;
@@ -69,19 +69,9 @@ public final class CodecUtils {
         return isSubclassOf(clazz, PRIMITIVE_TYPE_STRING);
     }
 
-    public static boolean isInteger(Object object) {
-        return object.getClass() == PRIMITIVE_TYPE_INTEGER ||
-                object.getClass() == PRIMITIVE_TYPE_INTEGER_BOXED;
-    }
-
     public static boolean isInteger(Class clazz) {
         return clazz == PRIMITIVE_TYPE_INTEGER ||
                 clazz == PRIMITIVE_TYPE_INTEGER_BOXED;
-    }
-
-    public static boolean isLong(Object object) {
-        return object.getClass() == PRIMITIVE_TYPE_LONG ||
-                object.getClass() == PRIMITIVE_TYPE_LONG_BOXED;
     }
 
     public static boolean isLong(Class clazz) {
@@ -89,19 +79,9 @@ public final class CodecUtils {
                 clazz == PRIMITIVE_TYPE_LONG_BOXED;
     }
 
-    public static boolean isFloat(Object object) {
-        return object.getClass() == PRIMITIVE_TYPE_FLOAT ||
-                object.getClass() == PRIMITIVE_TYPE_FLOAT_BOXED;
-    }
-
     public static boolean isFloat(Class clazz) {
         return clazz == PRIMITIVE_TYPE_FLOAT ||
                 clazz == PRIMITIVE_TYPE_FLOAT_BOXED;
-    }
-
-    public static boolean isDouble(Object object) {
-        return object.getClass() == PRIMITIVE_TYPE_DOUBLE ||
-                object.getClass() == PRIMITIVE_TYPE_DOUBLE_BOXED;
     }
 
     public static boolean isDouble(Class clazz) {
@@ -109,26 +89,13 @@ public final class CodecUtils {
                 clazz == PRIMITIVE_TYPE_DOUBLE_BOXED;
     }
 
-    public static boolean isBoolean(Object object) {
-        return object.getClass() == PRIMITIVE_TYPE_BOOLEAN ||
-                object.getClass() == PRIMITIVE_TYPE_BOOLEAN_BOXED;
-    }
-
     public static boolean isBoolean(Class clazz) {
         return clazz == PRIMITIVE_TYPE_BOOLEAN ||
                 clazz == PRIMITIVE_TYPE_BOOLEAN_BOXED;
     }
 
-    public static boolean isList(Object object) {
-        return isSubclassOf(object.getClass(), PRIMITIVE_TYPE_LIST);
-    }
-
     public static boolean isList(Class clazz) {
         return isSubclassOf(clazz, PRIMITIVE_TYPE_LIST);
-    }
-
-    public static boolean isMap(Object object) {
-        return isSubclassOf(object.getClass(), PRIMITIVE_TYPE_MAP);
     }
 
     public static boolean isMap(Class clazz) {
@@ -136,11 +103,8 @@ public final class CodecUtils {
     }
 
     public static boolean isPrimitive(Class clazz) {
-        if (clazz == PRIMITIVE_TYPE_BOOLEAN ||
-                clazz == PRIMITIVE_TYPE_FLOAT ||
-                clazz == PRIMITIVE_TYPE_DOUBLE ||
-                clazz == PRIMITIVE_TYPE_INTEGER ||
-                clazz == PRIMITIVE_TYPE_LONG)
+        if (isInteger(clazz) || isLong(clazz) || isBoolean(clazz) ||
+                isFloat(clazz) || isDouble(clazz))
             return true;
 
         return false;
@@ -168,9 +132,19 @@ public final class CodecUtils {
         }
     }
 
-    public static List<Field> getAnnotatedFields(Class<? extends Annotation> annotationType, Class baseClass) {
+    public static List<Field> getAnnotatedFields(ReflectionCache cache,
+                                                 Class<? extends Annotation> annotationType,
+                                                 Class baseClass) {
         Class curClass = baseClass;
-        List<Field> fields = new ArrayList<Field>();
+        List<Field> fields;
+
+        if (cache != null) {
+            fields = cache.queryCachedAnnotatedFields(annotationType, baseClass);
+            if (fields != null)
+                return fields;
+        }
+
+        fields = new ArrayList<Field>();
 
         while (curClass != Object.class && curClass != null) {
             for (Field f : curClass.getDeclaredFields()) {
@@ -181,12 +155,23 @@ public final class CodecUtils {
             curClass = curClass.getSuperclass();
         }
 
+        if (cache != null)
+            cache.cacheAnnotatedFields(annotationType, baseClass, fields);
+
         return fields;
     }
 
-    public static List<Field> getAllFields(Class baseClass) {
+    public static List<Field> getAllFields(ReflectionCache cache, Class baseClass) {
         Class curClass = baseClass;
-        List<Field> fields = new ArrayList<Field>();
+        List<Field> fields;
+
+        if (cache != null) {
+            fields = cache.queryCachedFields(baseClass);
+            if (fields != null)
+                return fields;
+        }
+
+        fields = new ArrayList<Field>();
 
         while (curClass != Object.class && curClass != null) {
             for (Field f : curClass.getDeclaredFields()) {
@@ -194,6 +179,9 @@ public final class CodecUtils {
             }
             curClass = curClass.getSuperclass();
         }
+
+        if (cache != null)
+            cache.cacheFields(baseClass, fields);
 
         return fields;
     }
@@ -204,7 +192,7 @@ public final class CodecUtils {
 
     public static int parseInteger(String fieldName, Object o) throws IncompatibleTypeException {
         if (o instanceof Integer) {
-            return ((Integer) o).intValue();
+            return (Integer) o;
         } else if (o instanceof String) {
             try {
                 return Integer.parseInt((String) o);
@@ -218,7 +206,7 @@ public final class CodecUtils {
 
     public static long parseLong(String fieldName, Object o) throws IncompatibleTypeException {
         if (o instanceof Long) {
-            return ((Long) o).longValue();
+            return (Long) o;
         } else if (o instanceof String) {
             try {
                 return Long.parseLong((String) o);
@@ -232,7 +220,7 @@ public final class CodecUtils {
 
     public static float parseFloat(String fieldName, Object o) throws IncompatibleTypeException {
         if (o instanceof Float) {
-            return ((Float) o).floatValue();
+            return (Float) o;
         } else if (o instanceof Double) {
             return ((Double) o).floatValue();
         } else if (o instanceof Integer) {
@@ -252,7 +240,7 @@ public final class CodecUtils {
         if (o instanceof Float) {
             return ((Float) o).doubleValue();
         } else if (o instanceof Double) {
-            return ((Double) o).doubleValue();
+            return (Double) o;
         } else if (o instanceof Integer) {
             return ((Integer) o).doubleValue();
         } else if (o instanceof String) {
@@ -268,7 +256,7 @@ public final class CodecUtils {
 
     public static boolean parseBoolean(String fieldName, Object o) throws IncompatibleTypeException {
         if (o instanceof Boolean) {
-            return ((Boolean) o).booleanValue();
+            return (Boolean) o;
         } else if (o instanceof String) {
            return Boolean.parseBoolean((String) o);
         } else {

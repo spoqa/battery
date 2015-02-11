@@ -40,8 +40,9 @@ public final class DeserializerFactory {
         }
     }
 
-    public static void deserialize(String contentType, String input, Object object,
-                                   FieldNameTranslator translator) throws DeserializationException {
+    public static void deserialize(String contentType, String input,
+                                   Object object, FieldNameTranslator translator)
+            throws DeserializationException {
         String mime = extractMime(contentType);
 
         if (Config.DEBUG_DUMP_RESPONSE) {
@@ -54,10 +55,13 @@ public final class DeserializerFactory {
             throw new DeserializationException(e);
         }
 
-        List<Field> responseObjects = CodecUtils.getAnnotatedFields(ResponseObject.class, object.getClass());
+        ReflectionCache cache = new ReflectionCache();
+
+        List<Field> responseObjects = CodecUtils.getAnnotatedFields(cache, ResponseObject.class,
+                object.getClass());
 
         if (responseObjects == null || responseObjects.size() == 0) {
-            deserializeObject(sDeserializerMap.get(mime), input, object, translator, true);
+            deserializeObject(cache, sDeserializerMap.get(mime), input, object, translator, true);
         } else if (responseObjects.size() > 1) {
             RpcException e = new RpcException(String.format("Object '%1$s' has more than one ResponseObject declarations",
                     object.getClass().getName()));
@@ -65,7 +69,7 @@ public final class DeserializerFactory {
         } else {
             Field destField = responseObjects.get(0);
             try {
-                List<Field> responseFields = CodecUtils.getAnnotatedFields(Response.class, object.getClass());
+                List<Field> responseFields = CodecUtils.getAnnotatedFields(cache, Response.class, object.getClass());
                 if (responseFields != null && responseFields.size() > 0) {
                     RpcException e = new RpcException(
                             String.format("Object '%1$s' has both ResponseObject and Response declarations",
@@ -74,7 +78,7 @@ public final class DeserializerFactory {
                 }
 
                 Object dest = destField.getType().newInstance();
-                deserializeObject(sDeserializerMap.get(mime), input, dest, translator, false);
+                deserializeObject(cache, sDeserializerMap.get(mime), input, dest, translator, false);
                 destField.set(object, dest);
             } catch (InstantiationException e) {
                 throw new DeserializationException(e);
@@ -91,24 +95,26 @@ public final class DeserializerFactory {
         return parts[0].trim();
     }
 
-    private static void deserializeObject(ResponseDeserializer deserializer, String input, Object object,
+    private static void deserializeObject(ReflectionCache cache,
+                                          ResponseDeserializer deserializer, String input, Object object,
                                           FieldNameTranslator translator, boolean filterByAnnotation)
             throws DeserializationException {
         /* Let's assume the root element is always an object */
         Object internalObject = deserializer.parseInput(input);
 
-        visitObject(deserializer, internalObject, object, translator, filterByAnnotation);
+        visitObject(cache, deserializer, internalObject, object, translator, filterByAnnotation);
     }
 
-    private static void visitObject(ResponseDeserializer deserializer, Object internalObject,
-                                    Object dest, FieldNameTranslator translator, boolean filterByAnnotation)
+    private static void visitObject(ReflectionCache cache, ResponseDeserializer deserializer,
+                                    Object internalObject, Object dest, FieldNameTranslator translator,
+                                    boolean filterByAnnotation)
             throws DeserializationException {
         List<Field> fields;
 
         if (filterByAnnotation)
-            fields = CodecUtils.getAnnotatedFields(Response.class, dest.getClass());
+            fields = CodecUtils.getAnnotatedFields(cache, Response.class, dest.getClass());
         else
-            fields = CodecUtils.getAllFields(dest.getClass());
+            fields = CodecUtils.getAllFields(cache, dest.getClass());
 
         try {
             for (Field f : fields) {
@@ -122,7 +128,14 @@ public final class DeserializerFactory {
                     Logger.debug(TAG, "read field " + fieldName);
                 }
 
-                Response annotation = f.getAnnotation(Response.class);
+                Response annotation;
+                if (cache.containsFieldAnnotation(f, Response.class)) {
+                    annotation = (Response) cache.queryFieldAnnotation(f, Response.class);
+                } else {
+                    annotation = f.getAnnotation(Response.class);
+                    cache.cacheFieldAnnotation(f, Response.class, annotation);
+                }
+
                 if (annotation != null) {
                     if (annotation.fieldName().length() > 0) {
                         docName = annotation.fieldName();
@@ -183,11 +196,11 @@ public final class DeserializerFactory {
                                     fieldName));
                         }
                         List newList = ArrayList.class.newInstance();
-                        visitArray(deserializer, value, newList, dest.getClass(), f, translator);
+                        visitArray(cache, deserializer, value, newList, dest.getClass(), f, translator);
                         f.set(dest, newList);
                     } else if (CodecUtils.isMap(fieldType)) {
                         Map newMap = (Map) fieldType.newInstance();
-                        visitMap(deserializer, value, newMap);
+                        visitMap(cache, deserializer, value, newMap);
                         f.set(dest, newMap);
                     } else if (CodecUtils.isBoolean(fieldType)) {
                         f.setBoolean(dest, CodecUtils.parseBoolean(fieldName, value));
@@ -198,7 +211,7 @@ public final class DeserializerFactory {
                     } else {
                         /* or it should be a POJO... */
                         Object newObject = fieldType.newInstance();
-                        visitObject(deserializer, value, newObject, translator, false);
+                        visitObject(cache, deserializer, value, newObject, translator, false);
                         f.set(dest, newObject);
                     }
                 } else {
@@ -213,8 +226,8 @@ public final class DeserializerFactory {
         }
     }
 
-    private static void visitArray(ResponseDeserializer deserializer, Object internalArray,
-                            List<?> output, Class body, Field field,
+    private static void visitArray(ReflectionCache cache, ResponseDeserializer deserializer,
+                            Object internalArray, List<?> output, Class body, Field field,
                             FieldNameTranslator translator) throws DeserializationException {
         Class innerType = CodecUtils.getGenericTypeOfField(body, field.getName());
 
@@ -228,7 +241,7 @@ public final class DeserializerFactory {
                     /* TODO implement nested map */
                 } else if (deserializer.isObject(element.getClass())) {
                     Object o = innerType.newInstance();
-                    visitObject(deserializer, element, o, translator, false);
+                    visitObject(cache, deserializer, element, o, translator, false);
                     add.invoke(output, o);
                 } else {
                     Object newElem = element;
@@ -265,8 +278,8 @@ public final class DeserializerFactory {
         }
     }
 
-    private static void visitMap(ResponseDeserializer deserializer, Object internalObject,
-                          Map<?, ?> m) throws DeserializationException {
+    private static void visitMap(ReflectionCache cache, ResponseDeserializer deserializer,
+                                 Object internalObject, Map<?, ?> m) throws DeserializationException {
         /* TODO implement deserialization into Map<?,?> */
     }
 

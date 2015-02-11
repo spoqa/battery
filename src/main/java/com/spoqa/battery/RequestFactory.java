@@ -144,7 +144,7 @@ public final class RequestFactory {
         }
 
         /* append query string */
-        List<Field> queryStringParams = CodecUtils.getAnnotatedFields(QueryString.class, object.getClass());
+        List<Field> queryStringParams = CodecUtils.getAnnotatedFields(null, QueryString.class, object.getClass());
         for (Field field : queryStringParams) {
             String fieldName = field.getName();
             Class fieldType = field.getType();

@@ -19,6 +19,6 @@ public class UnderscoreNameTransformer implements FieldNameTransformer {
 
     @Override
     public String encode(List<String> parts) {
-        return StringUtils.join(parts, "_");
+        return StringUtils.join(parts, "_", StringUtils.toLowerTransformer);
     }
 }

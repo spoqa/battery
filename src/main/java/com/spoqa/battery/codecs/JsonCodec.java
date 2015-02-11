@@ -56,7 +56,7 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
     }
 
     private JSONObject visitObject(Object o) throws SerializationException {
-        Iterable<Field> fields = CodecUtils.getAnnotatedFields(RequestBody.class, o.getClass());
+        Iterable<Field> fields = CodecUtils.getAnnotatedFields(null, RequestBody.class, o.getClass());
 
         JSONObject body = new JSONObject();
 
