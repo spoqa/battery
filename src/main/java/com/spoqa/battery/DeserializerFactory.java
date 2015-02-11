@@ -49,12 +49,6 @@ public final class DeserializerFactory {
             Logger.debug(TAG, "Response: " + input);
         }
         
-        int separatorPos = mime.indexOf(";");
-        
-        if (separatorPos > 0) {
-            mime = mime.substring(0, separatorPos);
-        }
-
         if (!sDeserializerMap.containsKey(mime)) {
             RpcException e = new RpcException(String.format("No deserializer associated with MIME type %1$s", mime));
             throw new DeserializationException(e);
