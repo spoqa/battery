@@ -114,7 +114,7 @@ final public class Rpc {
         rpcContext.requestQueue().add(req);
     }
 
-    public static <T> Observable<T> invokeRx(final AndroidExecutionContext rpcContext,
+    public static <T> Observable<T> invokeObservable(final AndroidExecutionContext rpcContext,
                                              final T rpcObject) {
         final PublishSubject<T> subject = PublishSubject.create();
         
