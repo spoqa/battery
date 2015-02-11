@@ -27,7 +27,6 @@ import com.spoqa.battery.exceptions.RpcException;
 import com.spoqa.battery.exceptions.SerializationException;
 
 import rx.Observable;
-import rx.Subscriber;
 import rx.subjects.PublishSubject;
 
 final public class Rpc {
@@ -127,7 +126,8 @@ final public class Rpc {
 
             @Override
             public void onFailure(Throwable why) {
-                onFailure(why);
+                subject.onError(why);
+                subject.onCompleted();
             }
         });
         

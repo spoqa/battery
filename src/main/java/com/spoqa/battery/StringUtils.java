@@ -22,24 +22,32 @@ public final class StringUtils {
     public static List<String> splitByCase(String input) {
         List<String> output = new ArrayList<String>();
 
-        boolean isLowercase = false;
+        boolean isUppercase = false;
+        boolean continuousUppercase = false;
         int startIndex = 0;
 
         for (int i = 0; i < input.length(); ++i) {
             char c = input.charAt(i);
-            boolean currentLowercase = Character.isLowerCase(c);
+            boolean currentUppercase = Character.isUpperCase(c);
             if (i == 0)
-                isLowercase = currentLowercase;
+                isUppercase = currentUppercase;
 
-            if (isLowercase != currentLowercase) {
+            if (currentUppercase && !isUppercase) {
                 output.add(input.substring(startIndex, i));
                 startIndex = i;
+            } else if (currentUppercase) {
+                continuousUppercase = true;
+            } else if (continuousUppercase) {
+                output.add(input.substring(startIndex, i - 1));
+                startIndex = i - 1;
+                continuousUppercase = false;
             }
+
+            isUppercase = currentUppercase;
         }
 
         output.add(input.substring(startIndex));
 
         return output;
     }
-
 }
