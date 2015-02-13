@@ -204,7 +204,6 @@ public final class CodecUtils {
     public static List<Method> getAnnotatedSetterMethods(ReflectionCache cache,
                                                    Class<? extends Annotation> annotationType,
                                                    Class baseClass) {
-        Class curClass = baseClass;
         List<Method> methods;
 
         if (cache != null) {
@@ -215,18 +214,15 @@ public final class CodecUtils {
 
         methods = new ArrayList<Method>();
 
-        while (curClass != Object.class && curClass != null) {
-            for (Method m : curClass.getMethods()) {
-                if (m.isAnnotationPresent(annotationType)) {
-                    if (m.getReturnType() != void.class || m.getParameterTypes().length != 1) {
-                        Logger.warn(TAG, String.format("%1$s.%2$s() is not a setter",
-                                curClass.getName(), m.getName()));
-                        continue;
-                    }
-                    methods.add(m);
+        for (Method m : baseClass.getMethods()) {
+            if (m.isAnnotationPresent(annotationType)) {
+                if (m.getReturnType() != void.class || m.getParameterTypes().length != 1) {
+                    Logger.warn(TAG, String.format("%1$s.%2$s() is not a setter",
+                            baseClass.getName(), m.getName()));
+                    continue;
                 }
+                methods.add(m);
             }
-            curClass = curClass.getSuperclass();
         }
 
         if (cache != null)
@@ -236,7 +232,6 @@ public final class CodecUtils {
     }
 
     public static List<Method> getAllSetterMethods(ReflectionCache cache, Class baseClass) {
-        Class curClass = baseClass;
         List<Method> methods;
 
         if (cache != null) {
@@ -247,15 +242,12 @@ public final class CodecUtils {
 
         methods = new ArrayList<Method>();
 
-        while (curClass != Object.class && curClass != null) {
-            for (Method m : curClass.getMethods()) {
+        for (Method m : baseClass.getMethods()) {
                 /* this method automatically filter out setter methods only starting with "set-" prefix */
-                String methodName = m.getName().toLowerCase();
-                if (m.getReturnType() == void.class && m.getParameterTypes().length == 1 &&
-                        methodName.startsWith("set"))
-                    methods.add(m);
-            }
-            curClass = curClass.getSuperclass();
+            String methodName = m.getName().toLowerCase();
+            if (m.getReturnType() == void.class && m.getParameterTypes().length == 1 &&
+                    methodName.startsWith("set"))
+                methods.add(m);
         }
 
         if (cache != null)
