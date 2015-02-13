@@ -8,6 +8,7 @@ import com.spoqa.battery.exceptions.IncompatibleTypeException;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.List;
@@ -114,7 +115,7 @@ public final class CodecUtils {
         try {
             Field field = clazz.getDeclaredField(fieldName);
             Class declaringType = field.getType();
-            int genericTypePosition = -1;
+            int genericTypePosition;
             if (isSubclassOf(declaringType, PRIMITIVE_TYPE_LIST)) {
                 genericTypePosition = 0;
             } else if (isSubclassOf(declaringType, PRIMITIVE_TYPE_MAP)) {
@@ -132,10 +133,30 @@ public final class CodecUtils {
         }
     }
 
+    public static Class getGenericTypeOfMethod(Class clazz, String methodName, Class paramType) {
+        try {
+            Method method = clazz.getDeclaredMethod(methodName, paramType);
+            int genericTypePosition;
+            if (isSubclassOf(paramType, PRIMITIVE_TYPE_LIST)) {
+                genericTypePosition = 0;
+            } else if (isSubclassOf(paramType, PRIMITIVE_TYPE_MAP)) {
+                genericTypePosition = 1;
+            } else {
+                Logger.error(TAG, String.format("Field %1$s is neither list nor map.", paramType.getName()));
+                return null;
+            }
+            ParameterizedType type = (ParameterizedType) method.getGenericParameterTypes()[0];
+            return (Class) type.getActualTypeArguments()[genericTypePosition];
+        } catch (NoSuchMethodException e) {
+            Logger.error(TAG, String.format("No such field %1$s in %2$s", methodName, clazz.getName()));
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     public static List<Field> getAnnotatedFields(ReflectionCache cache,
                                                  Class<? extends Annotation> annotationType,
                                                  Class baseClass) {
-        Class curClass = baseClass;
         List<Field> fields;
 
         if (cache != null) {
@@ -146,13 +167,11 @@ public final class CodecUtils {
 
         fields = new ArrayList<Field>();
 
-        while (curClass != Object.class && curClass != null) {
-            for (Field f : curClass.getDeclaredFields()) {
-                if (f.isAnnotationPresent(annotationType)) {
-                    fields.add(f);
-                }
+        for (Field f : baseClass.getFields()) {
+            if (f.isAnnotationPresent(annotationType)) {
+                Logger.debug(TAG, f.getName());
+                fields.add(f);
             }
-            curClass = curClass.getSuperclass();
         }
 
         if (cache != null)
@@ -162,7 +181,6 @@ public final class CodecUtils {
     }
 
     public static List<Field> getAllFields(ReflectionCache cache, Class baseClass) {
-        Class curClass = baseClass;
         List<Field> fields;
 
         if (cache != null) {
@@ -173,17 +191,77 @@ public final class CodecUtils {
 
         fields = new ArrayList<Field>();
 
-        while (curClass != Object.class && curClass != null) {
-            for (Field f : curClass.getDeclaredFields()) {
-                fields.add(f);
-            }
-            curClass = curClass.getSuperclass();
+        for (Field f : baseClass.getFields()) {
+            fields.add(f);
         }
 
         if (cache != null)
             cache.cacheFields(baseClass, fields);
 
         return fields;
+    }
+
+    public static List<Method> getAnnotatedSetterMethods(ReflectionCache cache,
+                                                   Class<? extends Annotation> annotationType,
+                                                   Class baseClass) {
+        Class curClass = baseClass;
+        List<Method> methods;
+
+        if (cache != null) {
+            methods = cache.queryCachedAnnotatedSetterMethods(annotationType, baseClass);
+            if (methods != null)
+                return methods;
+        }
+
+        methods = new ArrayList<Method>();
+
+        while (curClass != Object.class && curClass != null) {
+            for (Method m : curClass.getMethods()) {
+                if (m.isAnnotationPresent(annotationType)) {
+                    if (m.getReturnType() != void.class || m.getParameterTypes().length != 1) {
+                        Logger.warn(TAG, String.format("%1$s.%2$s() is not a setter",
+                                curClass.getName(), m.getName()));
+                        continue;
+                    }
+                    methods.add(m);
+                }
+            }
+            curClass = curClass.getSuperclass();
+        }
+
+        if (cache != null)
+            cache.cacheAnnotatedSetterMethods(annotationType, baseClass, methods);
+
+        return methods;
+    }
+
+    public static List<Method> getAllSetterMethods(ReflectionCache cache, Class baseClass) {
+        Class curClass = baseClass;
+        List<Method> methods;
+
+        if (cache != null) {
+            methods = cache.queryCachedSetterMethods(baseClass);
+            if (methods != null)
+                return methods;
+        }
+
+        methods = new ArrayList<Method>();
+
+        while (curClass != Object.class && curClass != null) {
+            for (Method m : curClass.getMethods()) {
+                /* this method automatically filter out setter methods only starting with "set-" prefix */
+                String methodName = m.getName().toLowerCase();
+                if (m.getReturnType() == void.class && m.getParameterTypes().length == 1 &&
+                        methodName.startsWith("set"))
+                    methods.add(m);
+            }
+            curClass = curClass.getSuperclass();
+        }
+
+        if (cache != null)
+            cache.cacheSetterMethods(baseClass, methods);
+
+        return methods;
     }
 
     public static String parseString(Object o) {
@@ -261,6 +339,19 @@ public final class CodecUtils {
            return Boolean.parseBoolean((String) o);
         } else {
             throw new IncompatibleTypeException(fieldName, Boolean.class.getName(), (String) o);
+        }
+    }
+
+    public static String normalizeSetterName(String name) {
+        if (name.startsWith("set_")) {
+            return name.substring(4);
+        } else if (name.startsWith("set")) {
+            name = name.substring(3);
+            return name.substring(0, 1).toLowerCase() + name.substring(1);
+        } else if (name.startsWith("Set")) {
+            return name.substring(3);
+        } else {
+            return name;
         }
     }
 

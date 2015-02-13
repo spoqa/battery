@@ -59,6 +59,7 @@ final public class Rpc {
             @Override
             public void onResponse(ResponseDelegate s) {
                 try {
+                    /* force content type if declared by RpcObject */
                     String contentType = rpcObjectDecl.expectedContentType();
                     if (contentType == null || contentType.length() == 0)
                         contentType = s.contentType();
@@ -127,7 +128,6 @@ final public class Rpc {
             @Override
             public void onFailure(Throwable why) {
                 subject.onError(why);
-                subject.onCompleted();
             }
         });
         

@@ -110,13 +110,18 @@ public final class DeserializerFactory {
                                     boolean filterByAnnotation)
             throws DeserializationException {
         List<Field> fields;
+        List<Method> setters;
 
-        if (filterByAnnotation)
+        if (filterByAnnotation) {
             fields = CodecUtils.getAnnotatedFields(cache, Response.class, dest.getClass());
-        else
+            setters = CodecUtils.getAnnotatedSetterMethods(cache, Response.class, dest.getClass());
+        } else {
             fields = CodecUtils.getAllFields(cache, dest.getClass());
+            setters = CodecUtils.getAllSetterMethods(cache, dest.getClass());
+        }
 
         try {
+            /* search fields */
             for (Field f : fields) {
                 String fieldName = f.getName();
                 String docName = null;
@@ -196,7 +201,8 @@ public final class DeserializerFactory {
                                     fieldName));
                         }
                         List newList = ArrayList.class.newInstance();
-                        visitArray(cache, deserializer, value, newList, dest.getClass(), f, translator);
+                        visitArray(cache, deserializer, value, newList,
+                                CodecUtils.getGenericTypeOfField(dest.getClass(), f.getName()), translator);
                         f.set(dest, newList);
                     } else if (CodecUtils.isMap(fieldType)) {
                         Map newMap = (Map) fieldType.newInstance();
@@ -219,6 +225,113 @@ public final class DeserializerFactory {
                         f.set(dest, null);
                 }
             }
+
+            /* search methods */
+            for (Method m : setters) {
+                String fieldName = CodecUtils.normalizeSetterName(m.getName());
+                String docName = null;
+                boolean explicit = false;
+                boolean hasValue = false;
+                Class fieldType = m.getParameterTypes()[0];
+
+                if (Config.DEBUG_DUMP_RESPONSE) {
+                    Logger.debug(TAG, "read method " + fieldName);
+                }
+
+                Response annotation;
+                if (cache.containsMethodAnnotation(m, Response.class)) {
+                    annotation = (Response) cache.queryMethodAnnotation(m, Response.class);
+                } else {
+                    annotation = m.getAnnotation(Response.class);
+                    cache.cacheMethodAnnotation(m, Response.class, annotation);
+                }
+
+                if (annotation != null) {
+                    if (annotation.fieldName().length() > 0) {
+                        docName = annotation.fieldName();
+                        explicit = true;
+                    }
+                }
+
+                if (docName == null)
+                    docName = translator.localToRemote(fieldName);
+
+                /* check for field names */
+                Object value = null;
+                if (explicit && docName.contains(".")) {
+                    try {
+                        value = findChild(deserializer, internalObject, docName);
+                        hasValue = true;
+                    } catch (NoSuchElementException e) {
+                        value = null;
+                    }
+                } else if (internalObject != null) {
+                    value = deserializer.queryObjectChild(internalObject, docName);
+                    hasValue = deserializer.containsChild(internalObject, docName);
+                }
+
+                if (!explicit && !hasValue) {
+                    /* fall back to the untransformed name */
+                    if (deserializer.containsChild(internalObject, fieldName)) {
+                        value = deserializer.queryObjectChild(internalObject, fieldName);
+                        hasValue = true;
+                    }
+                }
+
+                if (annotation != null && annotation.mandatory() && !hasValue) {
+                    /* check for mandatory field */
+                    throw new DeserializationException(new MissingFieldException(fieldName));
+                }
+
+                if (hasValue) {
+                    if (internalObject == null) {
+                        m.invoke(dest, null);
+                    } else if (FieldCodecCollections.contains(fieldType)) {
+                        FieldCodec codec = FieldCodecCollections.query(fieldType);
+                        m.invoke(dest, codec.decode(value.toString()));
+                    } else if (CodecUtils.isString(fieldType)) {
+                        m.invoke(dest, value.toString());
+                    } else if (CodecUtils.isInteger(fieldType)) {
+                        m.invoke(dest, CodecUtils.parseInteger(fieldName, value));
+                    } else if (CodecUtils.isLong(fieldType)) {
+                        m.invoke(dest, CodecUtils.parseLong(fieldName, value));
+                    } else if (CodecUtils.isList(fieldType)) {
+                        if (fieldType != List.class && fieldType != ArrayList.class) {
+                            Logger.error(TAG, String.format("argument of method '%1$s' is not " +
+                                    "ArrayList or its superclass.",
+                                    fieldName));
+                            continue;
+                        }
+                        if (!deserializer.isArray(value.getClass())) {
+                            Logger.error(TAG, String.format("internal class of '%1$s' is not an array",
+                                    fieldName));
+                        }
+                        List newList = ArrayList.class.newInstance();
+                        visitArray(cache, deserializer, value, newList,
+                                CodecUtils.getGenericTypeOfMethod(dest.getClass(), m.getName(), List.class),
+                                translator);
+                        m.invoke(dest, newList);
+                    } else if (CodecUtils.isMap(fieldType)) {
+                        Map newMap = (Map) fieldType.newInstance();
+                        visitMap(cache, deserializer, value, newMap);
+                        m.invoke(dest, newMap);
+                    } else if (CodecUtils.isBoolean(fieldType)) {
+                        m.invoke(dest, CodecUtils.parseBoolean(fieldName, value));
+                    } else if (CodecUtils.isFloat(fieldType)) {
+                        m.invoke(dest, CodecUtils.parseFloat(fieldName, value));
+                    } else if (CodecUtils.isDouble(fieldType)) {
+                        m.invoke(dest, CodecUtils.parseDouble(fieldName, value));
+                    } else {
+                        /* or it should be a POJO... */
+                        Object newObject = fieldType.newInstance();
+                        visitObject(cache, deserializer, value, newObject, translator, false);
+                        m.invoke(dest, newObject);
+                    }
+                } else {
+                    if (!CodecUtils.isPrimitive(fieldType))
+                        m.invoke(dest, null);
+                }
+            }
         } catch (Exception e) {
             throw new DeserializationException(e);
         } catch (IncompatibleTypeException e) {
@@ -227,10 +340,8 @@ public final class DeserializerFactory {
     }
 
     private static void visitArray(ReflectionCache cache, ResponseDeserializer deserializer,
-                            Object internalArray, List<?> output, Class body, Field field,
+                            Object internalArray, List<?> output, Class innerType,
                             FieldNameTranslator translator) throws DeserializationException {
-        Class innerType = CodecUtils.getGenericTypeOfField(body, field.getName());
-
         try {
             Method add = List.class.getDeclaredMethod("add", Object.class);
             Integer index = 0;

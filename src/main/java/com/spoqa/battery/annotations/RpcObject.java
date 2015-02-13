@@ -7,7 +7,6 @@ package com.spoqa.battery.annotations;
 import com.spoqa.battery.HttpRequest;
 import com.spoqa.battery.codecs.UrlEncodedFormEncoder;
 import com.spoqa.battery.transformers.CamelCaseTransformer;
-import com.spoqa.battery.transformers.DefaultTransformer;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

@@ -2,26 +2,27 @@ package com.spoqa.battery;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class ReflectionCache {
 
-    private static class AnnotatedFieldKey {
-        public static AnnotatedFieldKey instance = null;
+    private static class AnnotatedPropertyKey {
+        public static AnnotatedPropertyKey instance = null;
 
         static {
-            instance = new AnnotatedFieldKey();
+            instance = new AnnotatedPropertyKey();
         }
 
         public Class<? extends Annotation> annotation;
         public Class baseClass;
 
-        public AnnotatedFieldKey() {
+        public AnnotatedPropertyKey() {
         }
 
-        public AnnotatedFieldKey(Class<? extends Annotation> annotation, Class baseClass) {
+        public AnnotatedPropertyKey(Class<? extends Annotation> annotation, Class baseClass) {
             this.annotation = annotation;
             this.baseClass = baseClass;
         }
@@ -29,71 +30,102 @@ public class ReflectionCache {
         @Override
         public int hashCode() {
             return annotation.hashCode() ^ baseClass.hashCode();
-            //return String.format("%1$s/%2$s", annotation.getName(), baseClass.getName()).hashCode();
         }
 
         @Override
         public boolean equals(Object other_) {
-            if (!(other_ instanceof AnnotatedFieldKey))
+            if (!(other_ instanceof AnnotatedPropertyKey))
                 return false;
 
-            AnnotatedFieldKey other = (AnnotatedFieldKey) other_;
+            AnnotatedPropertyKey other = (AnnotatedPropertyKey) other_;
             return other.annotation == annotation && other.baseClass == baseClass;
         }
     }
 
-    private static class FieldAnnotationKey {
-        static public FieldAnnotationKey instance = null;
-
-        static {
-            instance = new FieldAnnotationKey();
-        }
-
-        public Field field;
+    private static class MemberAnnotationKey<T> {
+        public T member;
         public Class<? extends Annotation> annotation;
 
-        public FieldAnnotationKey() {
-        }
-
-        public FieldAnnotationKey(Field field, Class<? extends Annotation> annotation) {
-            this.field = field;
+        public MemberAnnotationKey(T member, Class<? extends Annotation> annotation) {
+            this.member = member;
             this.annotation = annotation;
         }
 
         @Override
         public int hashCode() {
-            return field.hashCode() ^ annotation.hashCode();
-            /*return String.format("%1$s %2$s %3$s", field.getName(),
-                    field.getDeclaringClass().getName(), annotation.getName()).hashCode();*/
+            return member.hashCode() ^ annotation.hashCode();
         }
 
         @Override
         public boolean equals(Object other_) {
-            if (!(other_ instanceof FieldAnnotationKey))
+            if (!(other_ instanceof MemberAnnotationKey))
                 return false;
 
-            FieldAnnotationKey other = (FieldAnnotationKey) other_;
-            return other.field == field && other.annotation == annotation;
+            MemberAnnotationKey other = (MemberAnnotationKey) other_;
+            return other.member == member && other.annotation == annotation;
         }
     }
 
-    private Map<AnnotatedFieldKey, List<Field>> mAnnotatedFieldsCache;
-    private Map<Class, List<Field>> mFieldsCache;
-    private Map<FieldAnnotationKey, Annotation> mFieldAnnotationCache;
+    private static class FieldAnnotationKey extends MemberAnnotationKey<Field> {
+        static public FieldAnnotationKey instance = null;
 
-    public ReflectionCache() {
-        mAnnotatedFieldsCache = new HashMap<AnnotatedFieldKey, List<Field>>();
-        mFieldsCache = new HashMap<Class, List<Field>>();
-        mFieldAnnotationCache = new HashMap<FieldAnnotationKey, Annotation>();
+        static {
+            instance = new FieldAnnotationKey(null, null);
+        }
+
+        public FieldAnnotationKey(Field field, Class<? extends Annotation> annotation) {
+            super(field, annotation);
+        }
     }
 
-    public List<Field> queryCachedAnnotatedFields(Class<? extends Annotation> annotation, Class baseClass) {
-        AnnotatedFieldKey key = AnnotatedFieldKey.instance;
+    private static class MethodAnnotationKey extends MemberAnnotationKey<Method> {
+        static public MethodAnnotationKey instance = null;
+
+        static {
+            instance = new MethodAnnotationKey(null, null);
+        }
+
+        public MethodAnnotationKey(Method method, Class<? extends Annotation> annotation) {
+            super(method, annotation);
+        }
+    }
+
+    private Map<AnnotatedPropertyKey, List<Field>> mAnnotatedFieldsCache;
+    private Map<AnnotatedPropertyKey, List<Method>> mAnnotatedSetterMethodsCache;
+    private Map<Class, List<Field>> mFieldsCache;
+    private Map<Class, List<Method>> mSetterMethodsCache;
+    private Map<FieldAnnotationKey, Annotation> mFieldAnnotationCache;
+    private Map<MethodAnnotationKey, Annotation> mMethodAnnotationCache;
+
+    public ReflectionCache() {
+        mAnnotatedFieldsCache = new HashMap<AnnotatedPropertyKey, List<Field>>();
+        mAnnotatedSetterMethodsCache = new HashMap<AnnotatedPropertyKey, List<Method>>();
+        mFieldsCache = new HashMap<Class, List<Field>>();
+        mSetterMethodsCache = new HashMap<Class, List<Method>>();
+        mFieldAnnotationCache = new HashMap<FieldAnnotationKey, Annotation>();
+        mMethodAnnotationCache = new HashMap<MethodAnnotationKey, Annotation>();
+    }
+
+    public List<Field> queryCachedAnnotatedFields(Class<? extends Annotation> annotation,
+                                                  Class baseClass) {
+        AnnotatedPropertyKey key = AnnotatedPropertyKey.instance;
         key.annotation = annotation;
         key.baseClass = baseClass;
 
         if (mAnnotatedFieldsCache.containsKey(key))
             return mAnnotatedFieldsCache.get(key);
+
+        return null;
+    }
+
+    public List<Method> queryCachedAnnotatedSetterMethods(Class<? extends Annotation> annotation,
+                                                          Class baseClass) {
+        AnnotatedPropertyKey key = AnnotatedPropertyKey.instance;
+        key.annotation = annotation;
+        key.baseClass = baseClass;
+
+        if (mAnnotatedSetterMethodsCache.containsKey(key))
+            return mAnnotatedSetterMethodsCache.get(key);
 
         return null;
     }
@@ -105,9 +137,16 @@ public class ReflectionCache {
         return null;
     }
 
+    public List<Method> queryCachedSetterMethods(Class baseClass) {
+        if (mSetterMethodsCache.containsKey(baseClass))
+            return mSetterMethodsCache.get(baseClass);
+
+        return null;
+    }
+
     public Annotation queryFieldAnnotation(Field field, Class<? extends Annotation> annotationClass) {
         FieldAnnotationKey key = FieldAnnotationKey.instance;
-        key.field = field;
+        key.member = field;
         key.annotation = annotationClass;
 
         if (mFieldAnnotationCache.containsKey(key)) {
@@ -117,20 +156,58 @@ public class ReflectionCache {
         return null;
     }
 
-    public void cacheAnnotatedFields(Class<? extends Annotation> annotation, Class baseClass, List<Field> fields) {
-        mAnnotatedFieldsCache.put(new AnnotatedFieldKey(annotation, baseClass), fields);
+    public Annotation queryMethodAnnotation(Method method, Class<? extends Annotation> annotationClass) {
+        MethodAnnotationKey key = MethodAnnotationKey.instance;
+        key.member = method;
+        key.annotation = annotationClass;
+
+        if (mFieldAnnotationCache.containsKey(key)) {
+            return mFieldAnnotationCache.get(key);
+        }
+
+        return null;
+    }
+
+    public void cacheAnnotatedFields(Class<? extends Annotation> annotation, Class baseClass,
+                                     List<Field> fields) {
+        mAnnotatedFieldsCache.put(new AnnotatedPropertyKey(annotation, baseClass), fields);
+    }
+
+    public void cacheAnnotatedSetterMethods(Class<? extends Annotation> annotation, Class baseClass,
+                                            List<Method> methods) {
+        mAnnotatedSetterMethodsCache.put(new AnnotatedPropertyKey(annotation, baseClass), methods);
     }
 
     public void cacheFields(Class baseClass, List<Field> fields) {
         mFieldsCache.put(baseClass, fields);
     }
 
+    public void cacheSetterMethods(Class baseClass, List<Method> methods) {
+        mSetterMethodsCache.put(baseClass, methods);
+    }
+
     public void cacheFieldAnnotation(Field field, Class<? extends Annotation> annotationClass, Annotation a) {
         mFieldAnnotationCache.put(new FieldAnnotationKey(field, annotationClass), a);
     }
 
+    public void cacheMethodAnnotation(Method method, Class<? extends Annotation> annotationClass, Annotation a) {
+        mMethodAnnotationCache.put(new MethodAnnotationKey(method, annotationClass), a);
+    }
+
     public boolean containsFieldAnnotation(Field field, Class<? extends Annotation> annotationClass) {
-        return mFieldAnnotationCache.containsKey(new FieldAnnotationKey(field, annotationClass));
+        FieldAnnotationKey key = FieldAnnotationKey.instance;
+        key.member = field;
+        key.annotation = annotationClass;
+
+        return mFieldAnnotationCache.containsKey(key);
+    }
+
+    public boolean containsMethodAnnotation(Method method, Class<? extends Annotation> annotationClass) {
+        MethodAnnotationKey key = MethodAnnotationKey.instance;
+        key.member = method;
+        key.annotation = annotationClass;
+
+        return mFieldAnnotationCache.containsKey(key);
     }
 
 }
