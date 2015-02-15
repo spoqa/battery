@@ -15,10 +15,12 @@ public class ExecutionContext<C> {
     private RequestPreprocessor mRequestPreprocessor;
     private ResponseValidator mResponseValidator;
     private Map<Class<? extends Throwable>, ExceptionCallback<C, ? extends Throwable>> mExceptionCallbacks;
+    private Map<Class<?>, FieldCodec> mFieldCodecs;
 
     public ExecutionContext() {
         mExceptionCallbacks = new HashMap<Class<? extends Throwable>,
                 ExceptionCallback<C, ? extends Throwable>>();
+        mFieldCodecs = new HashMap<Class<?>, FieldCodec>();
     }
 
     public String getDefaultUriPrefix() {
@@ -54,6 +56,10 @@ public class ExecutionContext<C> {
         mExceptionCallbacks.put(clazz, handler);
     }
 
+    public void registerFieldCodec(FieldCodec codec) {
+        mFieldCodecs.put(codec.getType(), codec);
+    }
+
     public <T extends Throwable> boolean dispatchErrorHandler(C frontendContext, T ex) {
         Class<T> clazz = (Class<T>) ex.getClass();
 
@@ -83,6 +89,17 @@ public class ExecutionContext<C> {
         }
 
         return false;
+    }
+
+    public FieldCodec<?> queryFieldCodec(Class<?> type) {
+        if (mFieldCodecs.containsKey(type))
+            return mFieldCodecs.get(type);
+
+        return null;
+    }
+
+    public boolean containsFieldCodec(Class<?> type) {
+        return mFieldCodecs.containsKey(type);
     }
 
 }

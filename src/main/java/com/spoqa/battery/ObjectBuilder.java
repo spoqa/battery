@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-public final class DeserializerFactory {
-    private static final String TAG = "DeserializerFactory";
+public final class ObjectBuilder {
+    private static final String TAG = "ObjectBuilder";
 
     private static Map<String, ResponseDeserializer> sDeserializerMap;
 
@@ -40,7 +40,7 @@ public final class DeserializerFactory {
         }
     }
 
-    public static void deserialize(String contentType, String input,
+    public static void deserialize(ExecutionContext context, String contentType, String input,
                                    Object object, FieldNameTranslator translator)
             throws DeserializationException {
         String mime = extractMime(contentType);
@@ -61,7 +61,8 @@ public final class DeserializerFactory {
                 object.getClass());
 
         if (responseObjects == null || responseObjects.size() == 0) {
-            deserializeObject(cache, sDeserializerMap.get(mime), input, object, translator, true);
+            deserializeObject(context, cache, sDeserializerMap.get(mime), input,
+                    object, translator, true);
         } else if (responseObjects.size() > 1) {
             RpcException e = new RpcException(String.format("Object '%1$s' has more than one ResponseObject declarations",
                     object.getClass().getName()));
@@ -78,7 +79,8 @@ public final class DeserializerFactory {
                 }
 
                 Object dest = destField.getType().newInstance();
-                deserializeObject(cache, sDeserializerMap.get(mime), input, dest, translator, false);
+                deserializeObject(context, cache, sDeserializerMap.get(mime), input, dest,
+                        translator, false);
                 destField.set(object, dest);
             } catch (InstantiationException e) {
                 throw new DeserializationException(e);
@@ -95,18 +97,20 @@ public final class DeserializerFactory {
         return parts[0].trim();
     }
 
-    private static void deserializeObject(ReflectionCache cache,
+    private static void deserializeObject(ExecutionContext context, ReflectionCache cache,
                                           ResponseDeserializer deserializer, String input, Object object,
                                           FieldNameTranslator translator, boolean filterByAnnotation)
             throws DeserializationException {
         /* Let's assume the root element is always an object */
         Object internalObject = deserializer.parseInput(input);
 
-        visitObject(cache, deserializer, internalObject, object, translator, filterByAnnotation);
+        visitObject(context, cache, deserializer, internalObject, object,
+                translator, filterByAnnotation);
     }
 
-    private static void visitObject(ReflectionCache cache, ResponseDeserializer deserializer,
-                                    Object internalObject, Object dest, FieldNameTranslator translator,
+    private static void visitObject(ExecutionContext context, ReflectionCache cache,
+                                    ResponseDeserializer deserializer, Object internalObject,
+                                    Object dest, FieldNameTranslator translator,
                                     boolean filterByAnnotation)
             throws DeserializationException {
         List<Field> fields;
@@ -181,8 +185,9 @@ public final class DeserializerFactory {
                 if (hasValue) {
                     if (internalObject == null) {
                         f.set(dest, null);
-                    } else if (FieldCodecCollections.contains(fieldType)) {
-                        FieldCodec codec = FieldCodecCollections.query(fieldType);
+                    } else if (context.containsFieldCodec(fieldType) &&
+                            CodecUtils.isPrimitive(value.getClass())) {
+                        FieldCodec codec = context.queryFieldCodec(fieldType);
                         f.set(dest, codec.decode(value.toString()));
                     } else if (CodecUtils.isString(fieldType)) {
                         f.set(dest, value.toString());
@@ -201,7 +206,7 @@ public final class DeserializerFactory {
                                     fieldName));
                         }
                         List newList = ArrayList.class.newInstance();
-                        visitArray(cache, deserializer, value, newList,
+                        visitArray(context, cache, deserializer, value, newList,
                                 CodecUtils.getGenericTypeOfField(dest.getClass(), f.getName()), translator);
                         f.set(dest, newList);
                     } else if (CodecUtils.isMap(fieldType)) {
@@ -215,10 +220,12 @@ public final class DeserializerFactory {
                     } else if (CodecUtils.isDouble(fieldType)) {
                         f.setDouble(dest, CodecUtils.parseDouble(fieldName, value));
                     } else {
-                        /* or it should be a POJO... */
-                        Object newObject = fieldType.newInstance();
-                        visitObject(cache, deserializer, value, newObject, translator, false);
-                        f.set(dest, newObject);
+                        if (!CodecUtils.shouldBeExcluded(fieldType)) {
+                            /* or it should be a POJO... */
+                            Object newObject = fieldType.newInstance();
+                            visitObject(context, cache, deserializer, value, newObject, translator, false);
+                            f.set(dest, newObject);
+                        }
                     }
                 } else {
                     if (!CodecUtils.isPrimitive(fieldType))
@@ -286,8 +293,9 @@ public final class DeserializerFactory {
                 if (hasValue) {
                     if (internalObject == null) {
                         m.invoke(dest, null);
-                    } else if (FieldCodecCollections.contains(fieldType)) {
-                        FieldCodec codec = FieldCodecCollections.query(fieldType);
+                    } else if (context.containsFieldCodec(fieldType) &&
+                            CodecUtils.isPrimitive(value.getClass())) {
+                        FieldCodec codec = context.queryFieldCodec(fieldType);
                         m.invoke(dest, codec.decode(value.toString()));
                     } else if (CodecUtils.isString(fieldType)) {
                         m.invoke(dest, value.toString());
@@ -307,7 +315,7 @@ public final class DeserializerFactory {
                                     fieldName));
                         }
                         List newList = ArrayList.class.newInstance();
-                        visitArray(cache, deserializer, value, newList,
+                        visitArray(context, cache, deserializer, value, newList,
                                 CodecUtils.getGenericTypeOfMethod(dest.getClass(), m.getName(), List.class),
                                 translator);
                         m.invoke(dest, newList);
@@ -322,10 +330,12 @@ public final class DeserializerFactory {
                     } else if (CodecUtils.isDouble(fieldType)) {
                         m.invoke(dest, CodecUtils.parseDouble(fieldName, value));
                     } else {
+                        if (!CodecUtils.shouldBeExcluded(fieldType)) {
                         /* or it should be a POJO... */
-                        Object newObject = fieldType.newInstance();
-                        visitObject(cache, deserializer, value, newObject, translator, false);
-                        m.invoke(dest, newObject);
+                            Object newObject = fieldType.newInstance();
+                            visitObject(context, cache, deserializer, value, newObject, translator, false);
+                            m.invoke(dest, newObject);
+                        }
                     }
                 } else {
                     if (!CodecUtils.isPrimitive(fieldType))
@@ -339,9 +349,10 @@ public final class DeserializerFactory {
         }
     }
 
-    private static void visitArray(ReflectionCache cache, ResponseDeserializer deserializer,
-                            Object internalArray, List<?> output, Class innerType,
-                            FieldNameTranslator translator) throws DeserializationException {
+    private static void visitArray(ExecutionContext context, ReflectionCache cache,
+                                   ResponseDeserializer deserializer, Object internalArray,
+                                   List<?> output, Class innerType,
+                                   FieldNameTranslator translator) throws DeserializationException {
         try {
             Method add = List.class.getDeclaredMethod("add", Object.class);
             Integer index = 0;
@@ -352,12 +363,14 @@ public final class DeserializerFactory {
                     /* TODO implement nested map */
                 } else if (deserializer.isObject(element.getClass())) {
                     Object o = innerType.newInstance();
-                    visitObject(cache, deserializer, element, o, translator, false);
+                    visitObject(context, cache, deserializer, element, o, translator, false);
                     add.invoke(output, o);
                 } else {
                     Object newElem = element;
                     try {
-                        if (CodecUtils.isString(innerType))
+                        if (context.containsFieldCodec(innerType))
+                            newElem = context.queryFieldCodec(innerType).decode(element.toString());
+                        else if (CodecUtils.isString(innerType))
                             newElem = CodecUtils.parseString(element);
                         else if (CodecUtils.isInteger(innerType))
                             newElem = CodecUtils.parseInteger(index.toString(), element);

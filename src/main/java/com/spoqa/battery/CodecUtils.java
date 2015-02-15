@@ -31,6 +31,11 @@ public final class CodecUtils {
     private static final Class PRIMITIVE_TYPE_LIST = List.class;
     private static final Class PRIMITIVE_TYPE_MAP = Map.class;
 
+    private static String[] EXCLUDE_OBJECT_PREFIXES = {
+            "java.",
+            "android."
+    };
+
     public static Iterable<KeyValuePair<String, Object>> traverseObject(
             ReflectionCache cache, Class<Annotation> annotationFilter, Object o) {
         List<KeyValuePair<String, Object>> list = new ArrayList<KeyValuePair<String, Object>>();
@@ -345,6 +350,15 @@ public final class CodecUtils {
         } else {
             return name;
         }
+    }
+
+    public static boolean shouldBeExcluded(Class clazz) {
+        String package_ = clazz.getPackage().getName();
+        for (String i : EXCLUDE_OBJECT_PREFIXES)
+            if (package_.startsWith(i))
+                return true;
+
+        return false;
     }
 
 }

@@ -13,7 +13,7 @@ import com.android.volley.VolleyError;
 import java.io.UnsupportedEncodingException;
 
 import com.spoqa.battery.Config;
-import com.spoqa.battery.DeserializerFactory;
+import com.spoqa.battery.ObjectBuilder;
 import com.spoqa.battery.FieldNameTranslator;
 import com.spoqa.battery.HttpRequest;
 import com.spoqa.battery.Logger;
@@ -63,7 +63,8 @@ final public class Rpc {
                     String contentType = rpcObjectDecl.expectedContentType();
                     if (contentType == null || contentType.length() == 0)
                         contentType = s.contentType();
-                    DeserializerFactory.deserialize(contentType, s.data(), rpcObject, nameTranslator);
+                    ObjectBuilder.deserialize(rpcContext, contentType, s.data(),
+                            rpcObject, nameTranslator);
 
                     if (rpcContext.getResponseValidator() != null) {
                         try {
