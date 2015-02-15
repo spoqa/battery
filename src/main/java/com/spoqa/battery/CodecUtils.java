@@ -116,6 +116,13 @@ public final class CodecUtils {
         return false;
     }
 
+    public static boolean isBuiltIn(Class clazz) {
+        if (isString(clazz) || isPrimitive(clazz))
+            return true;
+
+        return false;
+    }
+
     public static Class getGenericTypeOfField(Class clazz, String fieldName) {
         try {
             Field field = clazz.getDeclaredField(fieldName);
@@ -174,7 +181,6 @@ public final class CodecUtils {
 
         for (Field f : baseClass.getFields()) {
             if (f.isAnnotationPresent(annotationType)) {
-                Logger.debug(TAG, f.getName());
                 fields.add(f);
             }
         }

@@ -40,7 +40,7 @@ public final class ObjectBuilder {
         }
     }
 
-    public static void deserialize(ExecutionContext context, String contentType, String input,
+    public static void build(ExecutionContext context, String contentType, String input,
                                    Object object, FieldNameTranslator translator)
             throws DeserializationException {
         String mime = extractMime(contentType);
@@ -186,7 +186,7 @@ public final class ObjectBuilder {
                     if (internalObject == null) {
                         f.set(dest, null);
                     } else if (context.containsFieldCodec(fieldType) &&
-                            CodecUtils.isPrimitive(value.getClass())) {
+                            CodecUtils.isBuiltIn(value.getClass())) {
                         FieldCodec codec = context.queryFieldCodec(fieldType);
                         f.set(dest, codec.decode(value.toString()));
                     } else if (CodecUtils.isString(fieldType)) {
@@ -294,7 +294,7 @@ public final class ObjectBuilder {
                     if (internalObject == null) {
                         m.invoke(dest, null);
                     } else if (context.containsFieldCodec(fieldType) &&
-                            CodecUtils.isPrimitive(value.getClass())) {
+                            CodecUtils.isBuiltIn(value.getClass())) {
                         FieldCodec codec = context.queryFieldCodec(fieldType);
                         m.invoke(dest, codec.decode(value.toString()));
                     } else if (CodecUtils.isString(fieldType)) {
@@ -356,6 +356,7 @@ public final class ObjectBuilder {
         try {
             Method add = List.class.getDeclaredMethod("add", Object.class);
             Integer index = 0;
+
             for (Object element : deserializer.queryArrayChildren(internalArray)) {
                 if (CodecUtils.isList(innerType)) {
                     /* TODO implement nested list */

@@ -63,7 +63,7 @@ final public class Rpc {
                     String contentType = rpcObjectDecl.expectedContentType();
                     if (contentType == null || contentType.length() == 0)
                         contentType = s.contentType();
-                    ObjectBuilder.deserialize(rpcContext, contentType, s.data(),
+                    ObjectBuilder.build(rpcContext, contentType, s.data(),
                             rpcObject, nameTranslator);
 
                     if (rpcContext.getResponseValidator() != null) {
