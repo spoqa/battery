@@ -204,6 +204,7 @@ public final class ObjectBuilder {
                         if (!deserializer.isArray(value.getClass())) {
                             Logger.error(TAG, String.format("internal class of '%1$s' is not an array",
                                     fieldName));
+                            continue;
                         }
                         List newList = ArrayList.class.newInstance();
                         visitArray(context, cache, deserializer, value, newList,
@@ -313,6 +314,7 @@ public final class ObjectBuilder {
                         if (!deserializer.isArray(value.getClass())) {
                             Logger.error(TAG, String.format("internal class of '%1$s' is not an array",
                                     fieldName));
+                            continue;
                         }
                         List newList = ArrayList.class.newInstance();
                         visitArray(context, cache, deserializer, value, newList,

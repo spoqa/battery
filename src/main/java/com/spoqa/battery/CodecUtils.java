@@ -31,7 +31,7 @@ public final class CodecUtils {
     private static final Class PRIMITIVE_TYPE_LIST = List.class;
     private static final Class PRIMITIVE_TYPE_MAP = Map.class;
 
-    private static String[] EXCLUDE_OBJECT_PREFIXES = {
+    private static String[] EXCLUDED_OBJECT_PACKAGE_PREFIXES = {
             "java.",
             "android."
     };
@@ -360,7 +360,7 @@ public final class CodecUtils {
 
     public static boolean shouldBeExcluded(Class clazz) {
         String package_ = clazz.getPackage().getName();
-        for (String i : EXCLUDE_OBJECT_PREFIXES)
+        for (String i : EXCLUDED_OBJECT_PACKAGE_PREFIXES)
             if (package_.startsWith(i))
                 return true;
 
