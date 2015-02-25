@@ -274,6 +274,12 @@ public final class CodecUtils {
     public static int parseInteger(String fieldName, Object o) throws IncompatibleTypeException {
         if (o instanceof Integer) {
             return (Integer) o;
+        } else if (o instanceof Long) {
+            return ((Long) o).intValue();
+        } else if (o instanceof Float) {
+            return ((Float) o).intValue();
+        } else if (o instanceof Double) {
+            return ((Double) o).intValue();
         } else if (o instanceof String) {
             try {
                 return Integer.parseInt((String) o);
@@ -281,13 +287,19 @@ public final class CodecUtils {
                 throw new IncompatibleTypeException(fieldName, Integer.class.getName(), (String) o);
             }
         } else {
-            throw new IncompatibleTypeException(fieldName, Integer.class.getName(), (String) o);
+            throw new IncompatibleTypeException(fieldName, Integer.class.getName(), o.toString());
         }
     }
 
     public static long parseLong(String fieldName, Object o) throws IncompatibleTypeException {
         if (o instanceof Long) {
             return (Long) o;
+        } else if (o instanceof Integer) {
+            return ((Integer) o).longValue();
+        } else if (o instanceof Float) {
+            return ((Float) o).longValue();
+        } else if (o instanceof Double) {
+            return ((Double) o).longValue();
         } else if (o instanceof String) {
             try {
                 return Long.parseLong((String) o);
@@ -302,10 +314,12 @@ public final class CodecUtils {
     public static float parseFloat(String fieldName, Object o) throws IncompatibleTypeException {
         if (o instanceof Float) {
             return (Float) o;
-        } else if (o instanceof Double) {
-            return ((Double) o).floatValue();
         } else if (o instanceof Integer) {
             return ((Integer) o).floatValue();
+        } else if (o instanceof Double) {
+            return ((Double) o).floatValue();
+        } else if (o instanceof Long) {
+            return ((Long) o).floatValue();
         } else if (o instanceof String) {
             try {
                 return Float.parseFloat((String) o);
@@ -313,17 +327,19 @@ public final class CodecUtils {
                 throw new IncompatibleTypeException(fieldName, Float.class.getName(), (String) o);
             }
         } else {
-            throw new IncompatibleTypeException(fieldName, Float.class.getName(), (String) o);
+            throw new IncompatibleTypeException(fieldName, Float.class.getName(), o.toString());
         }
     }
 
     public static double parseDouble(String fieldName, Object o) throws IncompatibleTypeException {
         if (o instanceof Float) {
             return ((Float) o).doubleValue();
+        }  else if (o instanceof Integer) {
+            return ((Integer) o).doubleValue();
         } else if (o instanceof Double) {
             return (Double) o;
-        } else if (o instanceof Integer) {
-            return ((Integer) o).doubleValue();
+        } else if (o instanceof Long) {
+            return ((Long) o).doubleValue();
         } else if (o instanceof String) {
             try {
                 return Double.parseDouble((String) o);
@@ -331,7 +347,7 @@ public final class CodecUtils {
                 throw new IncompatibleTypeException(fieldName, Double.class.getName(), (String) o);
             }
         } else {
-            throw new IncompatibleTypeException(fieldName, Double.class.getName(), (String) o);
+            throw new IncompatibleTypeException(fieldName, Double.class.getName(), o.toString());
         }
     }
 
@@ -341,7 +357,7 @@ public final class CodecUtils {
         } else if (o instanceof String) {
            return Boolean.parseBoolean((String) o);
         } else {
-            throw new IncompatibleTypeException(fieldName, Boolean.class.getName(), (String) o);
+            throw new IncompatibleTypeException(fieldName, Boolean.class.getName(), o.toString());
         }
     }
 
