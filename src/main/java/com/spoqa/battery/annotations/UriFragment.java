@@ -11,5 +11,8 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface RestRequestParam {
+public @interface UriFragment {
+
+    public int value();
+
 }

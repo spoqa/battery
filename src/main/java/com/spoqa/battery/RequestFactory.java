@@ -6,6 +6,7 @@ package com.spoqa.battery;
 
 import com.spoqa.battery.annotations.QueryString;
 import com.spoqa.battery.annotations.RpcObject;
+import com.spoqa.battery.annotations.UriFragment;
 import com.spoqa.battery.codecs.UrlEncodedFormEncoder;
 import com.spoqa.battery.exceptions.ContextException;
 import com.spoqa.battery.exceptions.SerializationException;
@@ -14,6 +15,7 @@ import com.spoqa.battery.transformers.CamelCaseTransformer;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -116,14 +118,31 @@ public final class RequestFactory {
         }
 
         /* Build REST URI fragment */
-        if (rpcObjectDecl.uriParams() != null) {
-            Class self = object.getClass();
-            String[] restParams = rpcObjectDecl.uriParams();
-            Object[] parameters = new Object[restParams.length];
-            for (int i = 0; i < restParams.length; ++i) {
-                String paramName = restParams[i];
+        Class self = object.getClass();
+        List<Field> uriFragments = CodecUtils.getAnnotatedFields(null, UriFragment.class, self);
+        if (uriFragments != null && uriFragments.size() > 0) {
+            Map<Integer, Field> fieldMap = new HashMap<Integer, Field>();
+            for (Field f : uriFragments) {
+                UriFragment uf = (UriFragment) f.getAnnotation(UriFragment.class);
+                fieldMap.put(uf.value(), f);
+            }
+
+            List<Field> fieldList = new ArrayList<Field>();
+            for (int i = 1; i <= fieldMap.size(); ++i) {
+                if (!fieldMap.containsKey(i)) {
+                    Logger.error(TAG, String.format("Positional argument %1$d not found in %2$s", i,
+                            self.getName()));
+                    return null;
+                } else {
+                    fieldList.add(fieldMap.get(i));
+                }
+            }
+
+            Object[] parameters = new Object[fieldList.size()];
+            int i = 0;
+            for (Field field : fieldList) {
+                String paramName = field.getName();
                 try {
-                    Field field = self.getField(paramName);
                     Object fieldObject = field.get(object);
                     if (fieldObject == null ||
                             (!CodecUtils.isPrimitive(fieldObject.getClass()) &&
@@ -140,13 +159,12 @@ public final class RequestFactory {
                     } else {
                         parameters[i] = fieldObject;
                     }
-                } catch (NoSuchFieldException e) {
-                    Logger.error(TAG, String.format("No such field '%1$s' in class %2$s", paramName, self.getName()));
-                    return null;
                 } catch (IllegalAccessException e) {
                     e.printStackTrace();
-                    return null;
+                    ++i;
+                    continue;
                 }
+                ++i;
             }
 
             uri = String.format(uri, parameters);
