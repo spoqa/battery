@@ -9,6 +9,7 @@ import com.spoqa.battery.annotations.RpcObject;
 import com.spoqa.battery.codecs.UrlEncodedFormEncoder;
 import com.spoqa.battery.exceptions.ContextException;
 import com.spoqa.battery.exceptions.SerializationException;
+import com.spoqa.battery.transformers.CamelCaseTransformer;
 
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
@@ -36,14 +37,12 @@ public final class RequestFactory {
         }
 
         FieldNameTransformer remote, local;
+        local = context.getLocalFieldNameTransformer();
+        remote = context.getRemoteFieldNameTransformer();
         try {
-            if (annotation.remoteName() == RpcObject.NULL.class)
-                remote = null;
-            else
+            if (annotation.remoteName() != RpcObject.NULL.class)
                 remote = (FieldNameTransformer) annotation.remoteName().newInstance();
-            if (annotation.localName() == RpcObject.NULL.class)
-                local = null;
-            else
+            if (annotation.localName() != RpcObject.NULL.class)
                 local = (FieldNameTransformer) annotation.localName().newInstance();
         } catch (InstantiationException e) {
             e.printStackTrace();

@@ -15,6 +15,8 @@ public class ExecutionContext<C> {
     private RequestPreprocessor mRequestPreprocessor;
     private ResponseValidator mResponseValidator;
     private RequestSerializer mRequestSerializer;
+    private FieldNameTransformer mLocalFieldName;
+    private FieldNameTransformer mRemoteFieldName;
     private Map<Class<? extends Throwable>, ExceptionCallback<C, ? extends Throwable>> mExceptionCallbacks;
     private Map<Class<?>, FieldCodec> mFieldCodecs;
 
@@ -40,6 +42,14 @@ public class ExecutionContext<C> {
         return mRequestSerializer;
     }
 
+    public FieldNameTransformer getLocalFieldNameTransformer() {
+        return mLocalFieldName;
+    }
+
+    public FieldNameTransformer getRemoteFieldNameTransformer() {
+        return mRemoteFieldName;
+    }
+
     public void setDefaultUriPrefix(String prefix) {
         if (prefix.startsWith("http://") || prefix.startsWith("https://"))
             mDefaultUriPrefix = prefix;
@@ -59,6 +69,11 @@ public class ExecutionContext<C> {
 
     public void setRequestSerializer(RequestSerializer serializer) {
         mRequestSerializer = serializer;
+    }
+
+    public void setFieldNameTransformer(FieldNameTransformer local, FieldNameTransformer remote) {
+        mLocalFieldName = local;
+        mRemoteFieldName = remote;
     }
 
     public <T extends Throwable> void registerExceptionCallback(Class<T> clazz, ExceptionCallback<C, T> handler) {
