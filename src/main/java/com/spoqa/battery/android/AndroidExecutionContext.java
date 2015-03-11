@@ -13,6 +13,7 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.HurlStack;
 import com.android.volley.toolbox.Volley;
 
+import com.spoqa.battery.CodecUtils;
 import com.spoqa.battery.Config;
 import com.spoqa.battery.ExecutionContext;
 import com.spoqa.battery.FieldNameTranslator;
@@ -80,6 +81,20 @@ public class AndroidExecutionContext extends ExecutionContext<Context> {
         }
 
         final RpcObject rpcObjectDecl = rpcObject.getClass().getAnnotation(RpcObject.class);
+        if (rpcObjectDecl.context() != RpcObject.NULL.class) {
+            Class<?> contextSpec = rpcObjectDecl.context();
+            if (!CodecUtils.isSubclassOf(contextSpec, ExecutionContext.class)) {
+                Logger.error(TAG, String.format("Context attribute of RpcObject %1$s is not a " +
+                        "subclass of ExecutionContext", rpcObject.getClass().getName()));
+                return;
+            }
+            if (getClass() != contextSpec) {
+                Logger.error(TAG, String.format("RpcObject context mismatch. context: %1$s, " +
+                        "expected: %2$s", getClass().getName(), contextSpec.getName()));
+                return;
+            }
+        }
+
         final FieldNameTranslator nameTranslator = request.getFieldNameTranslator();
         Response.Listener<ResponseDelegate> onVolleyResponse = new Response.Listener<ResponseDelegate>() {
             @Override

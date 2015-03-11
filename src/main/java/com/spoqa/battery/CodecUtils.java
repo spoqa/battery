@@ -383,4 +383,24 @@ public final class CodecUtils {
         return false;
     }
 
+    public static Object parseEnum(Class enumType, String value) {
+        if (!enumType.isEnum()) {
+            Logger.error(TAG, String.format("type %1$s is not enum", enumType.getName()));
+            return null;
+        }
+
+        String valueLowercase = value.toLowerCase();
+
+        for (Object o : enumType.getEnumConstants()) {
+            if (o.toString().toLowerCase().equals(valueLowercase)) {
+                return o;
+            }
+        }
+
+        Logger.warn(TAG, String.format("Could not found value '%1$s' for enum %2$s",
+                value, enumType.getName()));
+
+        return null;
+    }
+
 }

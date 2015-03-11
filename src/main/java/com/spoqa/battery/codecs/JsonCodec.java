@@ -6,6 +6,7 @@ package com.spoqa.battery.codecs;
 
 import com.spoqa.battery.CodecUtils;
 import com.spoqa.battery.FieldNameTranslator;
+import com.spoqa.battery.Logger;
 import com.spoqa.battery.RequestSerializer;
 import com.spoqa.battery.ResponseDeserializer;
 import com.spoqa.battery.annotations.RequestBody;
@@ -18,9 +19,13 @@ import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
+import java.net.URLEncoder;
 import java.util.Iterator;
+import java.util.List;
 
 public class JsonCodec implements RequestSerializer, ResponseDeserializer {
+    private static final String TAG = "JsonCodec";
+
     public static final String MIME_TYPE = "application/json";
 
     public JsonCodec() {
@@ -32,7 +37,7 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
     @Override
     public byte[] serializeObject(Object o, FieldNameTranslator translator)
             throws SerializationException {
-        JSONObject body = visitObject(o);
+        JSONObject body = visitObject(o, translator);
 
         if (body != null) {
             try {
@@ -55,16 +60,55 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
         return true;
     }
 
-    private JSONObject visitObject(Object o) throws SerializationException {
+    private JSONObject visitObject(Object o, FieldNameTranslator translator) throws SerializationException {
         Iterable<Field> fields = CodecUtils.getAnnotatedFields(null, RequestBody.class, o.getClass());
 
         JSONObject body = new JSONObject();
 
-        try {
+        for (Field f : fields) {
+            RequestBody annotation = f.getAnnotation(RequestBody.class);
+            Class type = f.getType();
+            String localName = f.getName();
+            String foreignName;
+            if (annotation != null && annotation.fieldName().length() > 0) {
+                foreignName = annotation.fieldName();
+            } else {
+                if (translator != null)
+                    foreignName = translator.localToRemote(localName);
+                else
+                    foreignName = localName;
+            }
 
+            try {
+                Object element = f.get(o);
 
-        } catch (Exception e) {
-
+                if (element == null)
+                    body.put(foreignName, null);
+                else if (CodecUtils.isString(type))
+                    body.put(foreignName, (String) element);
+                else if (CodecUtils.isFloat(type))
+                    body.put(foreignName, (Float) element);
+                else if (CodecUtils.isDouble(type))
+                    body.put(foreignName, (Double) element);
+                else if (CodecUtils.isBoolean(type))
+                    body.put(foreignName, (Boolean) element);
+                else if (CodecUtils.isInteger(type))
+                    body.put(foreignName, (Integer) element);
+                else if (CodecUtils.isLong(type))
+                    body.put(foreignName, (Long) element);
+                else if (CodecUtils.isSubclassOf(element.getClass(), List.class))
+                    body.put(foreignName, visitArray((List<Object>) element, translator));
+                else if (element.getClass().isEnum())
+                    body.put(foreignName, element.toString());
+                else
+                    body.put(foreignName, visitObject(element, translator));
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+                continue;
+            } catch (JSONException e) {
+                e.printStackTrace();
+                continue;
+            }
         }
 
         if (body.length() > 0)
@@ -73,8 +117,32 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
             return null;
     }
 
-    private JSONArray visitArray(Iterable<Object> a) throws SerializationException {
-        return null;
+    private JSONArray visitArray(Iterable<Object> a, FieldNameTranslator translator) throws SerializationException {
+        JSONArray array = new JSONArray();
+
+        for (Object element : a) {
+            Class type = element.getClass();
+            if (CodecUtils.isString(type))
+                array.put((String) element);
+            else if (CodecUtils.isFloat(type))
+                array.put((Float) element);
+            else if (CodecUtils.isDouble(type))
+                array.put((Double) element);
+            else if (CodecUtils.isBoolean(type))
+                array.put((Boolean) element);
+            else if (CodecUtils.isInteger(type))
+                array.put((Integer) element);
+            else if (CodecUtils.isLong(type))
+                array.put((Long) element);
+            else if (CodecUtils.isSubclassOf(element.getClass(), List.class))
+                array.put(visitArray((List<Object>) element, translator));
+            else if (element.getClass().isEnum())
+                array.put(element.toString());
+            else
+                array.put(visitObject(element, translator));
+        }
+
+        return array;
     }
 
     /* deserializer */

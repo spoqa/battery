@@ -220,6 +220,8 @@ public final class ObjectBuilder {
                         f.setFloat(dest, CodecUtils.parseFloat(fieldName, value));
                     } else if (CodecUtils.isDouble(fieldType)) {
                         f.setDouble(dest, CodecUtils.parseDouble(fieldName, value));
+                    } else if (fieldType.isEnum()) {
+                        f.set(dest, CodecUtils.parseEnum(fieldType, value.toString()));
                     } else {
                         if (!CodecUtils.shouldBeExcluded(fieldType)) {
                             /* or it should be a POJO... */

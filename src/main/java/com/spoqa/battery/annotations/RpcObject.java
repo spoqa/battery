@@ -24,8 +24,9 @@ public @interface RpcObject {
     public int method() default HttpRequest.Methods.GET;
     public String uri();
     public String[] uriParams() default {};
-    public Class requestSerializer() default UrlEncodedFormEncoder.class;
+    public Class requestSerializer() default NULL.class;
     public Class localName() default CamelCaseTransformer.class;
     public Class remoteName() default NULL.class;
+    public Class context() default NULL.class;
     public String expectedContentType() default "";
 }

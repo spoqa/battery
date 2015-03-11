@@ -6,6 +6,7 @@ package com.spoqa.battery;
 
 import com.spoqa.battery.annotations.QueryString;
 import com.spoqa.battery.annotations.RpcObject;
+import com.spoqa.battery.codecs.UrlEncodedFormEncoder;
 import com.spoqa.battery.exceptions.ContextException;
 import com.spoqa.battery.exceptions.SerializationException;
 
@@ -71,9 +72,11 @@ public final class RequestFactory {
 
         /* set request body */
         Class serializerCls = annotation.requestSerializer();
-        if ((method == HttpRequest.Methods.POST || method == HttpRequest.Methods.PUT) &&
-                serializerCls != RpcObject.NULL.class) {
-            if (serializerCls != null) {
+        if (method == HttpRequest.Methods.POST || method == HttpRequest.Methods.PUT) {
+            if (serializerCls == RpcObject.NULL.class && context.getRequestSerializer() == null)
+                serializerCls = UrlEncodedFormEncoder.class;
+
+            if (serializerCls != RpcObject.NULL.class) {
                 try {
                     RequestSerializer serializer = (RequestSerializer) serializerCls.newInstance();
                     request.putHeader(HttpRequest.HEADER_CONTENT_TYPE, serializer.serializationContentType());
@@ -83,6 +86,13 @@ public final class RequestFactory {
                 } catch (IllegalAccessException e) {
                     e.printStackTrace();
                 }
+            } else if (context.getRequestSerializer() != null) {
+                RequestSerializer serializer = context.getRequestSerializer();
+                request.putHeader(HttpRequest.HEADER_CONTENT_TYPE, serializer.serializationContentType());
+                request.setRequestBody(serializer.serializeObject(object, nameTranslator));
+            } else {
+                Logger.warn(TAG, String.format("Current RpcObject %1$s does not have " +
+                                "RequestSerializer specified.", object.getClass().getName()));
             }
         }
 

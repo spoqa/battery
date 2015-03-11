@@ -14,6 +14,7 @@ public class ExecutionContext<C> {
     private String mDefaultUriPrefix;
     private RequestPreprocessor mRequestPreprocessor;
     private ResponseValidator mResponseValidator;
+    private RequestSerializer mRequestSerializer;
     private Map<Class<? extends Throwable>, ExceptionCallback<C, ? extends Throwable>> mExceptionCallbacks;
     private Map<Class<?>, FieldCodec> mFieldCodecs;
 
@@ -35,6 +36,10 @@ public class ExecutionContext<C> {
         return mResponseValidator;
     }
 
+    public RequestSerializer getRequestSerializer() {
+        return mRequestSerializer;
+    }
+
     public void setDefaultUriPrefix(String prefix) {
         if (prefix.startsWith("http://") || prefix.startsWith("https://"))
             mDefaultUriPrefix = prefix;
@@ -50,6 +55,10 @@ public class ExecutionContext<C> {
 
     public void setResponseValidator(ResponseValidator validator) {
         mResponseValidator = validator;
+    }
+
+    public void setRequestSerializer(RequestSerializer serializer) {
+        mRequestSerializer = serializer;
     }
 
     public <T extends Throwable> void registerExceptionCallback(Class<T> clazz, ExceptionCallback<C, T> handler) {

@@ -53,6 +53,8 @@ public class UrlEncodedFormEncoder implements RequestSerializer {
                     value = ((Integer) element).toString();
                 else if (CodecUtils.isLong(type))
                     value = ((Long) element).toString();
+                else if (type.isEnum())
+                    value = element.toString();
                 else
                     Logger.warn(TAG, String.format("Field %1$s is not serializable", type.getName()));
             } catch (IllegalAccessException e) {
