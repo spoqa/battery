@@ -26,7 +26,6 @@ public class UrlEncodedFormEncoder implements RequestSerializer {
         StringBuilder sb = new StringBuilder();
 
         List<Field> fields = CodecUtils.getAnnotatedFields(null, RequestBody.class, o.getClass());
-        boolean first = true;
         for (Field f : fields) {
             RequestBody annotation = f.getAnnotation(RequestBody.class);
             Class type = f.getType();
@@ -41,38 +40,31 @@ public class UrlEncodedFormEncoder implements RequestSerializer {
             try {
                 Object element = f.get(o);
 
-                if (CodecUtils.isString(type))
-                    value = (String) element;
-                else if (CodecUtils.isFloat(type))
-                    value = ((Float) element).toString();
-                else if (CodecUtils.isDouble(type))
-                    value = ((Double) element).toString();
-                else if (CodecUtils.isBoolean(type))
-                    value = ((Boolean) element).toString();
-                else if (CodecUtils.isInteger(type))
-                    value = ((Integer) element).toString();
-                else if (CodecUtils.isLong(type))
-                    value = ((Long) element).toString();
-                else if (type.isEnum())
-                    value = element.toString();
-                else
+                if (element == null) {
+                    continue;
+                } else if (CodecUtils.isString(type)) {
+                    append(sb, foreignName, (String) element);
+                } else if (CodecUtils.isFloat(type)) {
+                    append(sb, foreignName, Float.toString((Float) element));
+                } else if (CodecUtils.isDouble(type)) {
+                    append(sb, foreignName, Double.toString((Double) element));
+                } else if (CodecUtils.isBoolean(type)) {
+                    append(sb, foreignName, Boolean.toString((Boolean) element));
+                } else if (CodecUtils.isInteger(type)) {
+                    append(sb, foreignName, Integer.toString((Integer) element));
+                } else if (CodecUtils.isLong(type)) {
+                    append(sb, foreignName, Long.toString((Long) element));
+                } else if (type.isEnum()) {
+                    append(sb, foreignName, element.toString());
+                } else if (CodecUtils.isList(type)) {
+                    for (Object innerElement : (List<Object>) element)
+                        append(sb, foreignName, innerElement.toString());
+                } else {
                     Logger.warn(TAG, String.format("Field %1$s is not serializable", type.getName()));
+                }
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
                 continue;
-            }
-
-            try {
-                if (!first)
-                    sb.append('&');
-
-                first = false;
-
-                sb.append(URLEncoder.encode(foreignName, "utf-8"));
-                sb.append('=');
-                sb.append(URLEncoder.encode(value, "utf-8"));
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
             }
         }
 
@@ -81,6 +73,19 @@ public class UrlEncodedFormEncoder implements RequestSerializer {
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
             return new byte[0];
+        }
+    }
+
+    private void append(StringBuilder sb, String key, String value) {
+        if (sb.length() != 0)
+            sb.append('&');
+
+        try {
+            sb.append(URLEncoder.encode(key, "utf-8"));
+            sb.append('=');
+            sb.append(URLEncoder.encode(value, "utf-8"));
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
         }
     }
 

@@ -57,36 +57,17 @@ public final class ObjectBuilder {
 
         ReflectionCache cache = new ReflectionCache();
 
-        List<Field> responseObjects = CodecUtils.getAnnotatedFields(cache, ResponseObject.class,
-                object.getClass());
-
-        if (responseObjects == null || responseObjects.size() == 0) {
-            deserializeObject(context, cache, sDeserializerMap.get(mime), input,
-                    object, translator, true);
-        } else if (responseObjects.size() > 1) {
-            RpcException e = new RpcException(String.format("Object '%1$s' has more than one ResponseObject declarations",
-                    object.getClass().getName()));
-            throw new DeserializationException(e);
-        } else {
-            Field destField = responseObjects.get(0);
-            try {
-                List<Field> responseFields = CodecUtils.getAnnotatedFields(cache, Response.class, object.getClass());
-                if (responseFields != null && responseFields.size() > 0) {
-                    RpcException e = new RpcException(
-                            String.format("Object '%1$s' has both ResponseObject and Response declarations",
-                                    object.getClass().getName()));
-                    throw new DeserializationException(e);
-                }
-
-                Object dest = destField.getType().newInstance();
-                deserializeObject(context, cache, sDeserializerMap.get(mime), input, dest,
-                        translator, false);
-                destField.set(object, dest);
-            } catch (InstantiationException e) {
-                throw new DeserializationException(e);
-            } catch (IllegalAccessException e) {
-                throw new DeserializationException(e);
+        try {
+            boolean filterByAnnotation = false;
+            Object responseObject = CodecUtils.getResponseObject(cache, object, true);
+            if (responseObject == null) {
+                responseObject = object;
+                filterByAnnotation = true;
             }
+            deserializeObject(context, cache, sDeserializerMap.get(mime), input, responseObject,
+                    translator, filterByAnnotation);
+        } catch (RpcException e) {
+            throw new DeserializationException(e);
         }
     }
 

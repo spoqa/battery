@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class HttpRequest {
@@ -118,28 +119,23 @@ public class HttpRequest {
         StringBuilder sb = new StringBuilder();
         sb.append(mUri);
 
-        String delimiter;
+        char delimiter;
         if (mUri.contains("?"))
-            delimiter = "&";
+            delimiter = '&';
         else
-            delimiter = "?";
+            delimiter = '?';
 
         for (String key : mParams.keySet()) {
             Object value = mParams.get(key);
 
-            try {
-                String stringifiedValue;
-                if (value == null)
-                    stringifiedValue = "";
-                else
-                    stringifiedValue = URLEncoder.encode(value.toString(), "utf-8");
-
-                sb.append(String.format("%1$s%2$s=%3$s", delimiter, key, stringifiedValue));
-
-                if (delimiter.equals("?"))
-                    delimiter = "&";
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
+            if (value instanceof List && value != null) {
+                for (Object innerValue : (List<Object>) value) {
+                    if (appendQueryString(sb, delimiter, key, innerValue))
+                        delimiter = '&';
+                }
+            } else {
+                if (appendQueryString(sb, delimiter, key, value))
+                    delimiter = '&';
             }
         }
 
@@ -147,6 +143,21 @@ public class HttpRequest {
         Logger.debug(TAG, "built uri: " + output);
 
         return output;
+    }
+
+    private boolean appendQueryString(StringBuilder sb, char delimiter, String key, Object value) {
+        if (value == null)
+            return false;
+
+        try {
+            sb.append(String.format("%1$c%2$s=%3$s", delimiter, key,
+                    URLEncoder.encode(value.toString(), "utf-8")));
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        return true;
     }
 
     public Object getRequestObject() {

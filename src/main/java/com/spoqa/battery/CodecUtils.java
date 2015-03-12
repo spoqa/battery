@@ -4,7 +4,11 @@
 
 package com.spoqa.battery;
 
+import com.spoqa.battery.annotations.Response;
+import com.spoqa.battery.annotations.ResponseObject;
+import com.spoqa.battery.exceptions.DeserializationException;
 import com.spoqa.battery.exceptions.IncompatibleTypeException;
+import com.spoqa.battery.exceptions.RpcException;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -401,6 +405,43 @@ public final class CodecUtils {
                 value, enumType.getName()));
 
         return null;
+    }
+
+    public static Object getResponseObject(ReflectionCache cache, Object object, boolean overwrite) throws RpcException {
+        List<Field> responseObjects = CodecUtils.getAnnotatedFields(cache, ResponseObject.class,
+                object.getClass());
+
+        if (responseObjects == null || responseObjects.size() == 0) {
+            return null;
+        } else if (responseObjects.size() > 1) {
+            RpcException e = new RpcException(String.format("Object '%1$s' has more than one ResponseObject declarations",
+                    object.getClass().getName()));
+            throw e;
+        } else {
+            Field destField = responseObjects.get(0);
+            try {
+                List<Field> responseFields = CodecUtils.getAnnotatedFields(cache, Response.class, object.getClass());
+                if (responseFields != null && responseFields.size() > 0) {
+                    RpcException e = new RpcException(
+                            String.format("Object '%1$s' has both ResponseObject and Response declarations",
+                                    object.getClass().getName()));
+                    throw e;
+                }
+
+                Object dest = destField.get(object);
+                if (dest == null || overwrite) {
+                    dest = destField.getType().newInstance();
+                    destField.set(object, dest);
+                }
+                return dest;
+            } catch (InstantiationException e) {
+                throw new RpcException(String.format("Could not instantiate ResponseObject %1$s",
+                        destField.getName()));
+            } catch (IllegalAccessException e) {
+                throw new RpcException(String.format("Could not instantiate ResponseObject %1$s",
+                        destField.getName()));
+            }
+        }
     }
 
 }

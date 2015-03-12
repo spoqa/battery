@@ -10,7 +10,6 @@ import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.ServerError;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.HurlStack;
 import com.android.volley.toolbox.Volley;
 
 import com.spoqa.battery.CodecUtils;
@@ -109,7 +108,15 @@ public class AndroidExecutionContext extends ExecutionContext<Context> {
 
                     if (getResponseValidator() != null) {
                         try {
-                            getResponseValidator().validate(rpcObject);
+                            Object responseObject = null;
+                            try {
+                                responseObject = CodecUtils.getResponseObject(null, rpcObject, false);
+                            } catch (RpcException e) {
+                                e.printStackTrace();
+                            }
+                            if (responseObject == null)
+                                responseObject = rpcObject;
+                            getResponseValidator().validate(responseObject);
                         } catch (ResponseValidationException e) {
                             if (!dispatchErrorHandler(mAndroidContext, e)) {
                                 onResponse.onFailure(e);

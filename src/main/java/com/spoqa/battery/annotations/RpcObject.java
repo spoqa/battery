@@ -5,8 +5,6 @@
 package com.spoqa.battery.annotations;
 
 import com.spoqa.battery.HttpRequest;
-import com.spoqa.battery.codecs.UrlEncodedFormEncoder;
-import com.spoqa.battery.transformers.CamelCaseTransformer;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -28,4 +26,5 @@ public @interface RpcObject {
     public Class remoteName() default NULL.class;
     public Class context() default NULL.class;
     public String expectedContentType() default "";
+
 }

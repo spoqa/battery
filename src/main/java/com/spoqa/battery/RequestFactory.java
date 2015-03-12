@@ -6,11 +6,10 @@ package com.spoqa.battery;
 
 import com.spoqa.battery.annotations.QueryString;
 import com.spoqa.battery.annotations.RpcObject;
-import com.spoqa.battery.annotations.UriFragment;
+import com.spoqa.battery.annotations.UriPath;
 import com.spoqa.battery.codecs.UrlEncodedFormEncoder;
 import com.spoqa.battery.exceptions.ContextException;
 import com.spoqa.battery.exceptions.SerializationException;
-import com.spoqa.battery.transformers.CamelCaseTransformer;
 
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
@@ -119,11 +118,11 @@ public final class RequestFactory {
 
         /* Build REST URI fragment */
         Class self = object.getClass();
-        List<Field> uriFragments = CodecUtils.getAnnotatedFields(null, UriFragment.class, self);
+        List<Field> uriFragments = CodecUtils.getAnnotatedFields(null, UriPath.class, self);
         if (uriFragments != null && uriFragments.size() > 0) {
             Map<Integer, Field> fieldMap = new HashMap<Integer, Field>();
             for (Field f : uriFragments) {
-                UriFragment uf = (UriFragment) f.getAnnotation(UriFragment.class);
+                UriPath uf = (UriPath) f.getAnnotation(UriPath.class);
                 fieldMap.put(uf.value(), f);
             }
 
@@ -181,7 +180,8 @@ public final class RequestFactory {
                     !CodecUtils.isBoolean(fieldType) &&
                     !CodecUtils.isFloat(fieldType) &&
                     !CodecUtils.isDouble(fieldType) &&
-                    !CodecUtils.isLong(fieldType)) {
+                    !CodecUtils.isLong(fieldType) &&
+                    !CodecUtils.isList(fieldType)) {
                 Logger.error(TAG, String.format("Type '%1$s' of field '%2$s' could not be built into URI.",
                         field.getClass().getName(), field.getName()));
                 continue;
@@ -193,7 +193,6 @@ public final class RequestFactory {
                 fieldName = annotation.fieldName();
             else
                 fieldName = translator.localToRemote(fieldName);
-
             try {
                 params.put(fieldName, field.get(object));
             } catch (IllegalAccessException e) {
