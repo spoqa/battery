@@ -4,6 +4,8 @@
 
 package com.spoqa.battery;
 
+import android.util.Log;
+
 import com.spoqa.battery.annotations.Response;
 import com.spoqa.battery.annotations.ResponseObject;
 import com.spoqa.battery.codecs.JsonCodec;
@@ -164,7 +166,7 @@ public final class ObjectBuilder {
                 }
 
                 if (hasValue) {
-                    if (internalObject == null) {
+                    if (internalObject == null || value == null) {
                         f.set(dest, null);
                     } else if (context.containsFieldCodec(fieldType) &&
                             CodecUtils.isBuiltIn(value.getClass())) {

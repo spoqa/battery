@@ -6,7 +6,6 @@ package com.spoqa.battery;
 
 import com.spoqa.battery.annotations.Response;
 import com.spoqa.battery.annotations.ResponseObject;
-import com.spoqa.battery.exceptions.DeserializationException;
 import com.spoqa.battery.exceptions.IncompatibleTypeException;
 import com.spoqa.battery.exceptions.RpcException;
 

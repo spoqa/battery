@@ -169,7 +169,12 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
         assert internalObject instanceof JSONObject;
 
         final JSONObject jsonObject = (JSONObject) internalObject;
-        return jsonObject.opt(key);
+
+        Object o = jsonObject.opt(key);
+        if (o == JSONObject.NULL)
+            return null;
+
+        return o;
     }
 
     @Override
