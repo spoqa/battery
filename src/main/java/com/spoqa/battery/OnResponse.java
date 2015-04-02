@@ -6,6 +6,6 @@ package com.spoqa.battery;
 
 
 public interface OnResponse<T> {
-    public void onResponse(T responseBody);
+    public void onResponse(T object);
     public void onFailure(Throwable why);
 }
