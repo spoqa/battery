@@ -63,9 +63,13 @@ public class AndroidExecutionContext extends ExecutionContext<Context> {
     }
 
     public <T> void invokeAsync(final T rpcObject, final OnResponse<T> onResponse) {
+        invokeAsync(null, rpcObject, onResponse);
+    }
+
+    public <T> void invokeAsync(final String uri, final T rpcObject, final OnResponse<T> onResponse) {
         HttpRequest request = null;
         try {
-            request = RequestFactory.createRequest(this, rpcObject);
+            request = RequestFactory.createRequest(this, rpcObject, uri);
         } catch (SerializationException e) {
             onResponse.onFailure(e);
             return;

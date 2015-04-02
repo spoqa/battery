@@ -22,7 +22,7 @@ import java.util.Map;
 public final class RequestFactory {
     private static final String TAG = "RequestFactory";
 
-    public static HttpRequest createRequest(ExecutionContext context, Object object)
+    public static HttpRequest createRequest(ExecutionContext context, Object object, String uriOverride)
             throws SerializationException, ContextException {
         /* validate current preprocessor context (if exists) */
         if (context.getRequestPreprocessor() != null) {
@@ -59,7 +59,7 @@ public final class RequestFactory {
 
         Map<String, Object> parameters = new HashMap<String, Object>();
         int method = annotation.method();
-        String uri = buildUri(context, object, annotation, parameters, nameTranslator);
+        String uri = buildUri(context, object, uriOverride, annotation, parameters, nameTranslator);
         if (uri == null) {
             Logger.error(TAG, "Failed to create request.");
             return null;
@@ -103,9 +103,15 @@ public final class RequestFactory {
         return request;
     }
 
-    private static String buildUri(ExecutionContext context, Object object, RpcObject rpcObjectDecl,
+    private static String buildUri(ExecutionContext context, Object object,
+                                   String uriOverride, RpcObject rpcObjectDecl,
                                    Map<String, Object> params, FieldNameTranslator translator) {
-        String uri = rpcObjectDecl.uri();
+        String uri;
+        if (uriOverride != null)
+            uri = uriOverride;
+        else
+            uri = rpcObjectDecl.uri();
+
         if (!uri.startsWith("http://") && !uri.startsWith("https://")) {
             if (context.getDefaultUriPrefix() == null) {
                 Logger.error(TAG, String.format("No URI prefix given."));
