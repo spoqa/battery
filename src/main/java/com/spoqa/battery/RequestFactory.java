@@ -6,6 +6,7 @@ package com.spoqa.battery;
 
 import com.spoqa.battery.annotations.QueryString;
 import com.spoqa.battery.annotations.RpcObject;
+import com.spoqa.battery.annotations.Uri;
 import com.spoqa.battery.annotations.UriPath;
 import com.spoqa.battery.codecs.UrlEncodedFormEncoder;
 import com.spoqa.battery.exceptions.ContextException;
@@ -22,7 +23,7 @@ import java.util.Map;
 public final class RequestFactory {
     private static final String TAG = "RequestFactory";
 
-    public static HttpRequest createRequest(ExecutionContext context, Object object, String uriOverride)
+    public static HttpRequest createRequest(RpcContext context, Object object)
             throws SerializationException, ContextException {
         /* validate current preprocessor context (if exists) */
         if (context.getRequestPreprocessor() != null) {
@@ -59,7 +60,7 @@ public final class RequestFactory {
 
         Map<String, Object> parameters = new HashMap<String, Object>();
         int method = annotation.method();
-        String uri = buildUri(context, object, uriOverride, annotation, parameters, nameTranslator);
+        String uri = buildUri(context, object, annotation, parameters, nameTranslator);
         if (uri == null) {
             Logger.error(TAG, "Failed to create request.");
             return null;
@@ -103,14 +104,38 @@ public final class RequestFactory {
         return request;
     }
 
-    private static String buildUri(ExecutionContext context, Object object,
-                                   String uriOverride, RpcObject rpcObjectDecl,
+    private static String buildUri(RpcContext context, Object object, RpcObject rpcObjectDecl,
                                    Map<String, Object> params, FieldNameTranslator translator) {
-        String uri;
-        if (uriOverride != null)
-            uri = uriOverride;
-        else
+        String uri = null;
+
+        /* Search for @Uri field */
+        List<Field> uriFields = CodecUtils.getAnnotatedFields(null, Uri.class, object.getClass());
+        if (uriFields != null && uriFields.size() > 0) {
+            if (uriFields.size() > 1) {
+                Logger.error(TAG, String.format("More than one Uri fields in object %1$s",
+                        object.getClass().getName()));
+                return null;
+            }
+            Field f = uriFields.get(0);
+            if (f.getType() != String.class) {
+                Logger.error(TAG, String.format("Field %1$s must be String", f.getType().getName()));
+                return null;
+            }
+            try {
+                uri = f.get(object).toString();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+
+        if (uri == null)
             uri = rpcObjectDecl.uri();
+
+        if (uri == null || uri.length() == 0) {
+            Logger.error(TAG, String.format("No URI supplied for object %1$s", object.getClass().getName()));
+            return null;
+        }
 
         if (!uri.startsWith("http://") && !uri.startsWith("https://")) {
             if (context.getDefaultUriPrefix() == null) {
@@ -195,8 +220,8 @@ public final class RequestFactory {
 
             /* override field name if optional value is supplied */
             QueryString annotation = field.getAnnotation(QueryString.class);
-            if (annotation.fieldName().length() > 0)
-                fieldName = annotation.fieldName();
+            if (annotation.name().length() > 0)
+                fieldName = annotation.name();
             else
                 fieldName = translator.localToRemote(fieldName);
             try {

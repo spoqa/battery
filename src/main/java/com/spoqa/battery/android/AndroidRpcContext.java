@@ -14,7 +14,7 @@ import com.android.volley.toolbox.Volley;
 
 import com.spoqa.battery.CodecUtils;
 import com.spoqa.battery.Config;
-import com.spoqa.battery.ExecutionContext;
+import com.spoqa.battery.RpcContext;
 import com.spoqa.battery.FieldNameTranslator;
 import com.spoqa.battery.HttpRequest;
 import com.spoqa.battery.Logger;
@@ -33,14 +33,14 @@ import java.io.UnsupportedEncodingException;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
-public class AndroidExecutionContext extends ExecutionContext<Context> {
+public class AndroidRpcContext extends RpcContext<Context> {
 
     private static final String TAG = "AndroidExecutionContext";
 
     private RequestQueue mRequestQueue;
     private Context mAndroidContext;
 
-    public AndroidExecutionContext(Context androidApplicationContext, RequestQueue requestQueue) {
+    public AndroidRpcContext(Context androidApplicationContext, RequestQueue requestQueue) {
         super();
         mAndroidContext = androidApplicationContext;
         mRequestQueue = requestQueue;
@@ -49,7 +49,7 @@ public class AndroidExecutionContext extends ExecutionContext<Context> {
         Logger.registerLogger(new AndroidLogger());
     }
 
-    public AndroidExecutionContext(Context androidApplicationContext) {
+    public AndroidRpcContext(Context androidApplicationContext) {
         this(androidApplicationContext,
                 Volley.newRequestQueue(androidApplicationContext, new OkHttpStack()));
     }
@@ -63,13 +63,9 @@ public class AndroidExecutionContext extends ExecutionContext<Context> {
     }
 
     public <T> void invokeAsync(final T rpcObject, final OnResponse<T> onResponse) {
-        invokeAsync(null, rpcObject, onResponse);
-    }
-
-    public <T> void invokeAsync(final String uri, final T rpcObject, final OnResponse<T> onResponse) {
         HttpRequest request = null;
         try {
-            request = RequestFactory.createRequest(this, rpcObject, uri);
+            request = RequestFactory.createRequest(this, rpcObject);
         } catch (SerializationException e) {
             onResponse.onFailure(e);
             return;
@@ -86,7 +82,7 @@ public class AndroidExecutionContext extends ExecutionContext<Context> {
         final RpcObject rpcObjectDecl = rpcObject.getClass().getAnnotation(RpcObject.class);
         if (rpcObjectDecl.context() != RpcObject.NULL.class) {
             Class<?> contextSpec = rpcObjectDecl.context();
-            if (!CodecUtils.isSubclassOf(contextSpec, ExecutionContext.class)) {
+            if (!CodecUtils.isSubclassOf(contextSpec, RpcContext.class)) {
                 Logger.error(TAG, String.format("Context attribute of RpcObject %1$s is not a " +
                         "subclass of ExecutionContext", rpcObject.getClass().getName()));
                 return;
@@ -107,7 +103,7 @@ public class AndroidExecutionContext extends ExecutionContext<Context> {
                     String contentType = rpcObjectDecl.expectedContentType();
                     if (contentType == null || contentType.length() == 0)
                         contentType = s.contentType();
-                    ObjectBuilder.build(AndroidExecutionContext.this, contentType, s.data(),
+                    ObjectBuilder.build(AndroidRpcContext.this, contentType, s.data(),
                             rpcObject, nameTranslator);
 
                     if (getResponseValidator() != null) {

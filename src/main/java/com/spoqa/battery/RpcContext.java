@@ -7,7 +7,7 @@ package com.spoqa.battery;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ExecutionContext<C> {
+public class RpcContext<C> {
 
     static final private String TAG = "ExecutionContext";
 
@@ -20,7 +20,7 @@ public class ExecutionContext<C> {
     private Map<Class<? extends Throwable>, ExceptionCallback<C, ? extends Throwable>> mExceptionCallbacks;
     private Map<Class<?>, FieldCodec> mFieldCodecs;
 
-    public ExecutionContext() {
+    public RpcContext() {
         mExceptionCallbacks = new HashMap<Class<? extends Throwable>,
                 ExceptionCallback<C, ? extends Throwable>>();
         mFieldCodecs = new HashMap<Class<?>, FieldCodec>();

@@ -13,6 +13,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface QueryString {
 
-    public String fieldName() default "";
+    public String name() default "";
 
 }

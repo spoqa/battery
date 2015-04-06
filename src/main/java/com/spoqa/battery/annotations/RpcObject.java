@@ -20,7 +20,7 @@ public @interface RpcObject {
     static final class NULL {}
 
     public int method() default HttpRequest.Methods.GET;
-    public String uri();
+    public String uri() default "";
     public Class requestSerializer() default NULL.class;
     public Class localName() default NULL.class;
     public Class remoteName() default NULL.class;

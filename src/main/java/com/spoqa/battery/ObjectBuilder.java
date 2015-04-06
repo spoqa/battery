@@ -4,10 +4,7 @@
 
 package com.spoqa.battery;
 
-import android.util.Log;
-
 import com.spoqa.battery.annotations.Response;
-import com.spoqa.battery.annotations.ResponseObject;
 import com.spoqa.battery.codecs.JsonCodec;
 import com.spoqa.battery.exceptions.DeserializationException;
 import com.spoqa.battery.exceptions.IncompatibleTypeException;
@@ -42,7 +39,7 @@ public final class ObjectBuilder {
         }
     }
 
-    public static void build(ExecutionContext context, String contentType, String input,
+    public static void build(RpcContext context, String contentType, String input,
                                    Object object, FieldNameTranslator translator)
             throws DeserializationException {
         String mime = extractMime(contentType);
@@ -80,7 +77,7 @@ public final class ObjectBuilder {
         return parts[0].trim();
     }
 
-    private static void deserializeObject(ExecutionContext context, ReflectionCache cache,
+    private static void deserializeObject(RpcContext context, ReflectionCache cache,
                                           ResponseDeserializer deserializer, String input, Object object,
                                           FieldNameTranslator translator, boolean filterByAnnotation)
             throws DeserializationException {
@@ -91,7 +88,7 @@ public final class ObjectBuilder {
                 translator, filterByAnnotation);
     }
 
-    private static void visitObject(ExecutionContext context, ReflectionCache cache,
+    private static void visitObject(RpcContext context, ReflectionCache cache,
                                     ResponseDeserializer deserializer, Object internalObject,
                                     Object dest, FieldNameTranslator translator,
                                     boolean filterByAnnotation)
@@ -129,8 +126,8 @@ public final class ObjectBuilder {
                 }
 
                 if (annotation != null) {
-                    if (annotation.fieldName().length() > 0) {
-                        docName = annotation.fieldName();
+                    if (annotation.name().length() > 0) {
+                        docName = annotation.name();
                         explicit = true;
                     }
                 }
@@ -160,7 +157,7 @@ public final class ObjectBuilder {
                     }
                 }
 
-                if (annotation != null && annotation.mandatory() && !hasValue) {
+                if (annotation != null && annotation.required() && !hasValue) {
                     /* check for mandatory field */
                     throw new DeserializationException(new MissingFieldException(f.getName()));
                 }
@@ -240,8 +237,8 @@ public final class ObjectBuilder {
                 }
 
                 if (annotation != null) {
-                    if (annotation.fieldName().length() > 0) {
-                        docName = annotation.fieldName();
+                    if (annotation.name().length() > 0) {
+                        docName = annotation.name();
                         explicit = true;
                     }
                 }
@@ -271,7 +268,7 @@ public final class ObjectBuilder {
                     }
                 }
 
-                if (annotation != null && annotation.mandatory() && !hasValue) {
+                if (annotation != null && annotation.required() && !hasValue) {
                     /* check for mandatory field */
                     throw new DeserializationException(new MissingFieldException(fieldName));
                 }
@@ -336,7 +333,7 @@ public final class ObjectBuilder {
         }
     }
 
-    private static void visitArray(ExecutionContext context, ReflectionCache cache,
+    private static void visitArray(RpcContext context, ReflectionCache cache,
                                    ResponseDeserializer deserializer, Object internalArray,
                                    List<?> output, Class innerType,
                                    FieldNameTranslator translator) throws DeserializationException {

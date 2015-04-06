@@ -31,8 +31,8 @@ public class UrlEncodedFormEncoder implements RequestSerializer {
             Class type = f.getType();
             String localName = f.getName();
             String foreignName;
-            if (annotation.fieldName().length() > 0)
-                foreignName = annotation.fieldName();
+            if (annotation.name().length() > 0)
+                foreignName = annotation.name();
             else
                 foreignName = translator.localToRemote(localName);
             String value = "";
