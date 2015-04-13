@@ -11,9 +11,11 @@ import java.util.Locale;
 public class Rfc1123DateCodec implements FieldCodec<Date> {
 
     private SimpleDateFormat mDateFormat;
+    private SimpleDateFormat mDateWithMicrosecFormat;
 
     public Rfc1123DateCodec() {
-        mDateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss:SSS Z", Locale.getDefault());
+        mDateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.getDefault());
+        mDateWithMicrosecFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss.SSS Z", Locale.getDefault());
     }
 
     @Override
@@ -26,7 +28,11 @@ public class Rfc1123DateCodec implements FieldCodec<Date> {
         try {
             return mDateFormat.parse(s);
         } catch (ParseException e) {
-            throw new DeserializationException(e);
+            try {
+                return mDateWithMicrosecFormat.parse(s);
+            } catch (ParseException e2) {
+                throw new DeserializationException(e);
+            }
         }
     }
 

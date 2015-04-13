@@ -171,10 +171,14 @@ public final class ObjectBuilder {
                         f.set(dest, codec.decode(value.toString()));
                     } else if (CodecUtils.isString(fieldType)) {
                         f.set(dest, value.toString());
-                    } else if (CodecUtils.isInteger(fieldType)) {
+                    } else if (CodecUtils.isIntegerPrimitive(fieldType)) {
                         f.setInt(dest, CodecUtils.parseInteger(fieldName, value));
-                    } else if (CodecUtils.isLong(fieldType)) {
+                    } else if (CodecUtils.isIntegerBoxed(fieldType)) {
+                        f.set(dest, CodecUtils.parseInteger(fieldName, value));
+                    } else if (CodecUtils.isLongPrimitive(fieldType)) {
                         f.setLong(dest, CodecUtils.parseLong(fieldName, value));
+                    } else if (CodecUtils.isLongBoxed(fieldType)) {
+                        f.set(dest, CodecUtils.parseLong(fieldName, value));
                     } else if (CodecUtils.isList(fieldType)) {
                         if (fieldType != List.class && fieldType != ArrayList.class) {
                             Logger.error(TAG, String.format("field '%1$s' is not ArrayList or its superclass.",
@@ -194,12 +198,18 @@ public final class ObjectBuilder {
                         Map newMap = (Map) fieldType.newInstance();
                         visitMap(cache, deserializer, value, newMap);
                         f.set(dest, newMap);
-                    } else if (CodecUtils.isBoolean(fieldType)) {
+                    } else if (CodecUtils.isBooleanPrimitive(fieldType)) {
                         f.setBoolean(dest, CodecUtils.parseBoolean(fieldName, value));
-                    } else if (CodecUtils.isFloat(fieldType)) {
+                    } else if (CodecUtils.isBooleanBoxed(fieldType)) {
+                        f.set(dest, CodecUtils.parseBoolean(fieldName, value));
+                    } else if (CodecUtils.isFloatPrimitive(fieldType)) {
                         f.setFloat(dest, CodecUtils.parseFloat(fieldName, value));
-                    } else if (CodecUtils.isDouble(fieldType)) {
+                    } else if (CodecUtils.isFloatBoxed(fieldType)) {
+                        f.set(dest, CodecUtils.parseFloat(fieldName, value));
+                    } else if (CodecUtils.isDoublePrimitive(fieldType)) {
                         f.setDouble(dest, CodecUtils.parseDouble(fieldName, value));
+                    } else if (CodecUtils.isDoubleBoxed(fieldType)) {
+                        f.set(dest, CodecUtils.parseDouble(fieldName, value));
                     } else if (fieldType.isEnum()) {
                         f.set(dest, CodecUtils.parseEnum(fieldType, value.toString()));
                     } else {

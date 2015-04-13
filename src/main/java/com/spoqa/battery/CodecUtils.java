@@ -83,9 +83,25 @@ public final class CodecUtils {
                 clazz == PRIMITIVE_TYPE_INTEGER_BOXED;
     }
 
+    public static boolean isIntegerPrimitive(Class clazz) {
+        return clazz == PRIMITIVE_TYPE_INTEGER;
+    }
+
+    public static boolean isIntegerBoxed(Class clazz) {
+        return clazz == PRIMITIVE_TYPE_INTEGER_BOXED;
+    }
+
     public static boolean isLong(Class clazz) {
         return clazz == PRIMITIVE_TYPE_LONG ||
                 clazz == PRIMITIVE_TYPE_LONG_BOXED;
+    }
+
+    public static boolean isLongPrimitive(Class clazz) {
+        return clazz == PRIMITIVE_TYPE_LONG;
+    }
+
+    public static boolean isLongBoxed(Class clazz) {
+        return clazz == PRIMITIVE_TYPE_LONG_BOXED;
     }
 
     public static boolean isFloat(Class clazz) {
@@ -93,14 +109,38 @@ public final class CodecUtils {
                 clazz == PRIMITIVE_TYPE_FLOAT_BOXED;
     }
 
+    public static boolean isFloatPrimitive(Class clazz) {
+        return clazz == PRIMITIVE_TYPE_FLOAT;
+    }
+
+    public static boolean isFloatBoxed(Class clazz) {
+        return clazz == PRIMITIVE_TYPE_FLOAT_BOXED;
+    }
+
     public static boolean isDouble(Class clazz) {
         return clazz == PRIMITIVE_TYPE_DOUBLE ||
                 clazz == PRIMITIVE_TYPE_DOUBLE_BOXED;
     }
 
+    public static boolean isDoublePrimitive(Class clazz) {
+        return clazz == PRIMITIVE_TYPE_DOUBLE;
+    }
+
+    public static boolean isDoubleBoxed(Class clazz) {
+        return clazz == PRIMITIVE_TYPE_DOUBLE_BOXED;
+    }
+
     public static boolean isBoolean(Class clazz) {
         return clazz == PRIMITIVE_TYPE_BOOLEAN ||
                 clazz == PRIMITIVE_TYPE_BOOLEAN_BOXED;
+    }
+
+    public static boolean isBooleanPrimitive(Class clazz) {
+        return clazz == PRIMITIVE_TYPE_BOOLEAN;
+    }
+
+    public static boolean isBooleanBoxed(Class clazz) {
+        return clazz == PRIMITIVE_TYPE_BOOLEAN_BOXED;
     }
 
     public static boolean isList(Class clazz) {
