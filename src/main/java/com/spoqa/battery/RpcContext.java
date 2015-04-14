@@ -17,12 +17,12 @@ public class RpcContext<C> {
     private RequestSerializer mRequestSerializer;
     private FieldNameTransformer mLocalFieldName;
     private FieldNameTransformer mRemoteFieldName;
-    private Map<Class<? extends Throwable>, ExceptionCallback<C, ? extends Throwable>> mExceptionCallbacks;
+    private Map<Class<? extends Throwable>, ExceptionHandler<C, ? extends Throwable>> mExceptionHandlers;
     private Map<Class<?>, FieldCodec> mFieldCodecs;
 
     public RpcContext() {
-        mExceptionCallbacks = new HashMap<Class<? extends Throwable>,
-                ExceptionCallback<C, ? extends Throwable>>();
+        mExceptionHandlers = new HashMap<Class<? extends Throwable>,
+                ExceptionHandler<C, ? extends Throwable>>();
         mFieldCodecs = new HashMap<Class<?>, FieldCodec>();
     }
 
@@ -76,8 +76,8 @@ public class RpcContext<C> {
         mRemoteFieldName = remote;
     }
 
-    public <T extends Throwable> void registerExceptionCallback(Class<T> clazz, ExceptionCallback<C, T> handler) {
-        mExceptionCallbacks.put(clazz, handler);
+    public <T extends Throwable> void registerExceptionHandler(Class<T> clazz, ExceptionHandler<C, T> handler) {
+        mExceptionHandlers.put(clazz, handler);
     }
 
     public void registerFieldCodec(FieldCodec codec) {
@@ -92,12 +92,12 @@ public class RpcContext<C> {
         }
 
         while (clazz != null) {
-            if (mExceptionCallbacks.containsKey(clazz)) {
+            if (mExceptionHandlers.containsKey(clazz)) {
                 if (Config.DEBUG_DUMP_RESPONSE) {
                     Logger.debug(TAG, "   handling: " + clazz.getName());
                 }
 
-                ExceptionCallback<C, T> callback = (ExceptionCallback<C, T>) mExceptionCallbacks.get(clazz);
+                ExceptionHandler<C, T> callback = (ExceptionHandler<C, T>) mExceptionHandlers.get(clazz);
                 boolean ret = callback.onException(frontendContext, ex);
 
                 if (ret)
