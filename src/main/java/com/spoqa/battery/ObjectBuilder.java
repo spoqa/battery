@@ -165,9 +165,9 @@ public final class ObjectBuilder {
                 if (hasValue) {
                     if (internalObject == null || value == null) {
                         f.set(dest, null);
-                    } else if (context.containsFieldCodec(fieldType) &&
+                    } else if (context.containsFieldAdapter(fieldType) &&
                             CodecUtils.isBuiltIn(value.getClass())) {
-                        FieldCodec codec = context.queryFieldCodec(fieldType);
+                        TypeAdapter codec = context.queryTypeAdapter(fieldType);
                         f.set(dest, codec.decode(value.toString()));
                     } else if (CodecUtils.isString(fieldType)) {
                         f.set(dest, value.toString());
@@ -276,9 +276,9 @@ public final class ObjectBuilder {
                 if (hasValue) {
                     if (internalObject == null) {
                         m.invoke(dest, null);
-                    } else if (context.containsFieldCodec(fieldType) &&
+                    } else if (context.containsFieldAdapter(fieldType) &&
                             CodecUtils.isBuiltIn(value.getClass())) {
-                        FieldCodec codec = context.queryFieldCodec(fieldType);
+                        TypeAdapter codec = context.queryTypeAdapter(fieldType);
                         m.invoke(dest, codec.decode(value.toString()));
                     } else if (CodecUtils.isString(fieldType)) {
                         m.invoke(dest, value.toString());
@@ -353,8 +353,8 @@ public final class ObjectBuilder {
                 } else {
                     Object newElem = element;
                     try {
-                        if (context.containsFieldCodec(innerType))
-                            newElem = context.queryFieldCodec(innerType).decode(element.toString());
+                        if (context.containsFieldAdapter(innerType))
+                            newElem = context.queryTypeAdapter(innerType).decode(element.toString());
                         else if (CodecUtils.isString(innerType))
                             newElem = CodecUtils.parseString(element);
                         else if (CodecUtils.isInteger(innerType))

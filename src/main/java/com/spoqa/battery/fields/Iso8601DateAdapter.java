@@ -1,6 +1,6 @@
 package com.spoqa.battery.fields;
 
-import com.spoqa.battery.FieldCodec;
+import com.spoqa.battery.TypeAdapter;
 import com.spoqa.battery.exceptions.DeserializationException;
 
 import java.text.ParseException;
@@ -8,13 +8,13 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-public class Iso8601DateCodec implements FieldCodec<Date> {
+public class Iso8601DateAdapter implements TypeAdapter<Date> {
 
     private SimpleDateFormat mDateTimeFormatWithMsec;
     private SimpleDateFormat mDateTimeFormat;
     private SimpleDateFormat mDateFormat;
 
-    public Iso8601DateCodec() {
+    public Iso8601DateAdapter() {
         mDateTimeFormatWithMsec = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ", Locale.getDefault());
         mDateTimeFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.getDefault());
         mDateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());

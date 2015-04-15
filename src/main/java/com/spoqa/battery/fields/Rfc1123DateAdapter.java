@@ -1,6 +1,6 @@
 package com.spoqa.battery.fields;
 
-import com.spoqa.battery.FieldCodec;
+import com.spoqa.battery.TypeAdapter;
 import com.spoqa.battery.exceptions.DeserializationException;
 
 import java.text.ParseException;
@@ -8,11 +8,11 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-public class Rfc1123DateCodec implements FieldCodec<Date> {
+public class Rfc1123DateAdapter implements TypeAdapter<Date> {
 
     private SimpleDateFormat mDateFormat;
 
-    public Rfc1123DateCodec() {
+    public Rfc1123DateAdapter() {
         mDateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss:SSS Z", Locale.getDefault());
     }
 

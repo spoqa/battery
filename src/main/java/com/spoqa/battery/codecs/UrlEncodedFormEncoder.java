@@ -7,6 +7,8 @@ import com.spoqa.battery.RequestSerializer;
 import com.spoqa.battery.annotations.RequestBody;
 import com.spoqa.battery.exceptions.SerializationException;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.net.URLEncoder;
@@ -59,6 +61,8 @@ public class UrlEncodedFormEncoder implements RequestSerializer {
                 } else if (CodecUtils.isList(type)) {
                     for (Object innerElement : (List<Object>) element)
                         append(sb, foreignName, innerElement.toString());
+                } else if (element instanceof InputStream) {
+                    Logger.warn(TAG, "Could not attach byte stream");
                 } else {
                     Logger.warn(TAG, String.format("Field %1$s is not serializable", type.getName()));
                 }

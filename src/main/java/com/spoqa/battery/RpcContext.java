@@ -18,12 +18,12 @@ public class RpcContext<C> {
     private FieldNameTransformer mLocalFieldName;
     private FieldNameTransformer mRemoteFieldName;
     private Map<Class<? extends Throwable>, ExceptionCallback<C, ? extends Throwable>> mExceptionCallbacks;
-    private Map<Class<?>, FieldCodec> mFieldCodecs;
+    private Map<Class<?>, TypeAdapter> mFieldAdapter;
 
     public RpcContext() {
         mExceptionCallbacks = new HashMap<Class<? extends Throwable>,
                 ExceptionCallback<C, ? extends Throwable>>();
-        mFieldCodecs = new HashMap<Class<?>, FieldCodec>();
+        mFieldAdapter = new HashMap<Class<?>, TypeAdapter>();
     }
 
     public String getDefaultUriPrefix() {
@@ -80,8 +80,12 @@ public class RpcContext<C> {
         mExceptionCallbacks.put(clazz, handler);
     }
 
-    public void registerFieldCodec(FieldCodec codec) {
-        mFieldCodecs.put(codec.getType(), codec);
+    public void registerFieldAdapter(TypeAdapter adapter) {
+        mFieldAdapter.put(adapter.getType(), adapter);
+    }
+
+    public void registerFieldAdapter(Class<?> type, TypeAdapter adapter) {
+        mFieldAdapter.put(type, adapter);
     }
 
     public <T extends Throwable> boolean dispatchErrorHandler(C frontendContext, T ex) {
@@ -115,15 +119,15 @@ public class RpcContext<C> {
         return false;
     }
 
-    public FieldCodec<?> queryFieldCodec(Class<?> type) {
-        if (mFieldCodecs.containsKey(type))
-            return mFieldCodecs.get(type);
+    public TypeAdapter<?> queryTypeAdapter(Class<?> type) {
+        if (mFieldAdapter.containsKey(type))
+            return mFieldAdapter.get(type);
 
         return null;
     }
 
-    public boolean containsFieldCodec(Class<?> type) {
-        return mFieldCodecs.containsKey(type);
+    public boolean containsFieldAdapter(Class<?> type) {
+        return mFieldAdapter.containsKey(type);
     }
 
 }

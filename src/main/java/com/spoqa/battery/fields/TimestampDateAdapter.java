@@ -1,17 +1,17 @@
 package com.spoqa.battery.fields;
 
-import com.spoqa.battery.FieldCodec;
+import com.spoqa.battery.TypeAdapter;
 import com.spoqa.battery.exceptions.DeserializationException;
 
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Date;
 
-public class TimestampDateCodec implements FieldCodec<Date> {
+public class TimestampDateAdapter implements TypeAdapter<Date> {
 
     private boolean mMsec;
 
-    public TimestampDateCodec(boolean msec) {
+    public TimestampDateAdapter(boolean msec) {
         mMsec = msec;
     }
 

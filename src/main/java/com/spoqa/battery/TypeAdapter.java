@@ -3,7 +3,7 @@ package com.spoqa.battery;
 import com.spoqa.battery.exceptions.DeserializationException;
 import com.spoqa.battery.exceptions.SerializationException;
 
-public interface FieldCodec<T> {
+public interface TypeAdapter<T> {
 
     public Class getType();
     public T decode(String s) throws DeserializationException;
