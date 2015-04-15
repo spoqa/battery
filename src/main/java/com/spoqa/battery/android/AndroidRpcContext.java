@@ -185,7 +185,7 @@ public class AndroidRpcContext extends RpcContext<Context> {
             public void onFailure(Throwable why) {
                 subject.onError(why);
             }
-        });
+        }, currentContext);
 
         return subject.asObservable();
     }

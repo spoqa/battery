@@ -165,7 +165,7 @@ public final class ObjectBuilder {
                 if (hasValue) {
                     if (internalObject == null || value == null) {
                         f.set(dest, null);
-                    } else if (context.containsFieldAdapter(fieldType) &&
+                    } else if (context.containsTypeAdapter(fieldType) &&
                             CodecUtils.isBuiltIn(value.getClass())) {
                         TypeAdapter codec = context.queryTypeAdapter(fieldType);
                         f.set(dest, codec.decode(value.toString()));
@@ -286,7 +286,7 @@ public final class ObjectBuilder {
                 if (hasValue) {
                     if (internalObject == null) {
                         m.invoke(dest, null);
-                    } else if (context.containsFieldAdapter(fieldType) &&
+                    } else if (context.containsTypeAdapter(fieldType) &&
                             CodecUtils.isBuiltIn(value.getClass())) {
                         TypeAdapter codec = context.queryTypeAdapter(fieldType);
                         m.invoke(dest, codec.decode(value.toString()));
@@ -363,7 +363,7 @@ public final class ObjectBuilder {
                 } else {
                     Object newElem = element;
                     try {
-                        if (context.containsFieldAdapter(innerType))
+                        if (context.containsTypeAdapter(innerType))
                             newElem = context.queryTypeAdapter(innerType).decode(element.toString());
                         else if (CodecUtils.isString(innerType))
                             newElem = CodecUtils.parseString(element);

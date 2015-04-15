@@ -18,12 +18,12 @@ public class RpcContext<C> {
     private FieldNameTransformer mLocalFieldName;
     private FieldNameTransformer mRemoteFieldName;
     private Map<Class<? extends Throwable>, ExceptionHandler<C, ? extends Throwable>> mExceptionHandlers;
-    private Map<Class<?>, TypeAdapter> mFieldAdapter;
+    private Map<Class<?>, TypeAdapter> mTypeAdapter;
 
     public RpcContext() {
         mExceptionHandlers = new HashMap<Class<? extends Throwable>,
                 ExceptionHandler<C, ? extends Throwable>>();
-        mFieldAdapter = new HashMap<Class<?>, TypeAdapter>();
+        mTypeAdapter = new HashMap<Class<?>, TypeAdapter>();
     }
 
     public String getDefaultUriPrefix() {
@@ -80,12 +80,12 @@ public class RpcContext<C> {
         mExceptionHandlers.put(clazz, handler);
     }
 
-    public void registerFieldAdapter(TypeAdapter adapter) {
-        mFieldAdapter.put(adapter.getType(), adapter);
+    public void registerTypeAdapter(TypeAdapter adapter) {
+        mTypeAdapter.put(adapter.getType(), adapter);
     }
 
-    public void registerFieldAdapter(Class<?> type, TypeAdapter adapter) {
-        mFieldAdapter.put(type, adapter);
+    public void registerTypeAdapter(Class<?> type, TypeAdapter adapter) {
+        mTypeAdapter.put(type, adapter);
     }
 
     public <T extends Throwable> boolean dispatchErrorHandler(C frontendContext, T ex) {
@@ -120,14 +120,14 @@ public class RpcContext<C> {
     }
 
     public TypeAdapter<?> queryTypeAdapter(Class<?> type) {
-        if (mFieldAdapter.containsKey(type))
-            return mFieldAdapter.get(type);
+        if (mTypeAdapter.containsKey(type))
+            return mTypeAdapter.get(type);
 
         return null;
     }
 
-    public boolean containsFieldAdapter(Class<?> type) {
-        return mFieldAdapter.containsKey(type);
+    public boolean containsTypeAdapter(Class<?> type) {
+        return mTypeAdapter.containsKey(type);
     }
 
 }
