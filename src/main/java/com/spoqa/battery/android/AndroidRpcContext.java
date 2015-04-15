@@ -63,6 +63,10 @@ public class AndroidRpcContext extends RpcContext<Context> {
     }
 
     public <T> void invokeAsync(final T rpcObject, final OnResponse<T> onResponse) {
+        invokeAsync(rpcObject, onResponse, mAndroidContext);
+    }
+
+    public <T> void invokeAsync(final T rpcObject, final OnResponse<T> onResponse, final Context currentContext) {
         HttpRequest request = null;
         try {
             request = RequestFactory.createRequest(this, rpcObject);
@@ -118,7 +122,7 @@ public class AndroidRpcContext extends RpcContext<Context> {
                                 responseObject = rpcObject;
                             getResponseValidator().validate(responseObject);
                         } catch (ResponseValidationException e) {
-                            if (!dispatchErrorHandler(mAndroidContext, e)) {
+                            if (!dispatchErrorHandler(currentContext, e)) {
                                 onResponse.onFailure(e);
                                 return;
                             }
@@ -127,7 +131,7 @@ public class AndroidRpcContext extends RpcContext<Context> {
 
                     onResponse.onResponse(rpcObject);
                 } catch (DeserializationException e) {
-                    if (!dispatchErrorHandler(mAndroidContext, e))
+                    if (!dispatchErrorHandler(currentContext, e))
                         onResponse.onFailure(e);
                 }
             }
@@ -153,8 +157,8 @@ public class AndroidRpcContext extends RpcContext<Context> {
                         e = new RpcException(volleyError.toString());
                     }
                 }
-                if (!dispatchErrorHandler(mAndroidContext, volleyError) &&
-                        !dispatchErrorHandler(mAndroidContext, e))
+                if (!dispatchErrorHandler(currentContext, volleyError) &&
+                        !dispatchErrorHandler(currentContext, e))
                     onResponse.onFailure(volleyError);
             }
         };
@@ -164,6 +168,10 @@ public class AndroidRpcContext extends RpcContext<Context> {
     }
 
     public <T> Observable<T> invokeObservable(final T rpcObject) {
+        return invokeObservable(rpcObject, mAndroidContext);
+    }
+
+    public <T> Observable<T> invokeObservable(final T rpcObject, Context currentContext) {
         final PublishSubject<T> subject = PublishSubject.create();
 
         invokeAsync(rpcObject, new OnResponse<T>() {
