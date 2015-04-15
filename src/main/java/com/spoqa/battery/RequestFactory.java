@@ -26,11 +26,8 @@ public final class RequestFactory {
     public static HttpRequest createRequest(RpcContext context, Object object)
             throws SerializationException, ContextException {
         /* validate current preprocessor context (if exists) */
-        if (context.getRequestPreprocessor() != null) {
-            Throwable error = context.getRequestPreprocessor().validateContext(object);
-            if (error != null)
-                throw new ContextException(error);
-        }
+        if (context.getRequestPreprocessor() != null)
+            context.getRequestPreprocessor().validateContext(object);
 
         RpcObject annotation = object.getClass().getAnnotation(RpcObject.class);
         if (annotation == null) {
