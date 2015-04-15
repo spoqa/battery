@@ -12,6 +12,8 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
 public @interface Response {
+
     public boolean required() default false;
-    public String name() default "";
+    public String value() default "";
+
 }

@@ -220,8 +220,8 @@ public final class RequestFactory {
 
             /* override field name if optional value is supplied */
             QueryString annotation = field.getAnnotation(QueryString.class);
-            if (annotation.name().length() > 0)
-                fieldName = annotation.name();
+            if (annotation.value().length() > 0)
+                fieldName = annotation.value();
             else
                 fieldName = translator.localToRemote(fieldName);
             try {

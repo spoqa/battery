@@ -126,8 +126,8 @@ public final class ObjectBuilder {
                 }
 
                 if (annotation != null) {
-                    if (annotation.name().length() > 0) {
-                        docName = annotation.name();
+                    if (annotation.value().length() > 0) {
+                        docName = annotation.value();
                         explicit = true;
                     }
                 }
@@ -247,8 +247,8 @@ public final class ObjectBuilder {
                 }
 
                 if (annotation != null) {
-                    if (annotation.name().length() > 0) {
-                        docName = annotation.name();
+                    if (annotation.value().length() > 0) {
+                        docName = annotation.value();
                         explicit = true;
                     }
                 }

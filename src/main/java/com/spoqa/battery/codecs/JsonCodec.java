@@ -70,8 +70,8 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
             Class type = f.getType();
             String localName = f.getName();
             String foreignName;
-            if (annotation != null && annotation.name().length() > 0) {
-                foreignName = annotation.name();
+            if (annotation != null && annotation.value().length() > 0) {
+                foreignName = annotation.value();
             } else {
                 if (translator != null)
                     foreignName = translator.localToRemote(localName);

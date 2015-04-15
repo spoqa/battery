@@ -12,5 +12,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface RequestBody {
-    public String name() default "";
+
+    public String value() default "";
+
 }
