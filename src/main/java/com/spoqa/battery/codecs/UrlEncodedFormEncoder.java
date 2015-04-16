@@ -1,3 +1,7 @@
+/**
+ * Copyright (c) 2014-2015 Spoqa, All Rights Reserved.
+ */
+
 package com.spoqa.battery.codecs;
 
 import com.spoqa.battery.CodecUtils;

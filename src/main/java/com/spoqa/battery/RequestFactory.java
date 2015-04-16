@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 Park Joon-Kyu, All Rights Reserved.
+ * Copyright (c) 2014-2015 Spoqa, All Rights Reserved.
  */
 
 package com.spoqa.battery;
