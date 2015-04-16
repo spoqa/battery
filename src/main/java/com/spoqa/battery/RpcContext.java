@@ -17,12 +17,12 @@ public class RpcContext<C> {
     private RequestSerializer mRequestSerializer;
     private FieldNameTransformer mLocalFieldName;
     private FieldNameTransformer mRemoteFieldName;
-    private Map<Class<? extends Throwable>, ExceptionHandler<C, ? extends Throwable>> mExceptionHandlers;
+    private Map<Class<? extends Throwable>, ExceptionHandler<C>> mExceptionHandlers;
     private Map<Class<?>, TypeAdapter> mTypeAdapter;
 
     public RpcContext() {
         mExceptionHandlers = new HashMap<Class<? extends Throwable>,
-                ExceptionHandler<C, ? extends Throwable>>();
+                ExceptionHandler<C>>();
         mTypeAdapter = new HashMap<Class<?>, TypeAdapter>();
     }
 
@@ -76,7 +76,7 @@ public class RpcContext<C> {
         mRemoteFieldName = remote;
     }
 
-    public <T extends Throwable> void registerExceptionHandler(Class<T> clazz, ExceptionHandler<C, T> handler) {
+    public <T extends Throwable> void registerExceptionHandler(Class<T> clazz, ExceptionHandler<C> handler) {
         mExceptionHandlers.put(clazz, handler);
     }
 
@@ -101,7 +101,7 @@ public class RpcContext<C> {
                     Logger.debug(TAG, "   handling: " + clazz.getName());
                 }
 
-                ExceptionHandler<C, T> callback = (ExceptionHandler<C, T>) mExceptionHandlers.get(clazz);
+                ExceptionHandler<C> callback = (ExceptionHandler<C>) mExceptionHandlers.get(clazz);
                 boolean ret = callback.onException(frontendContext, ex);
 
                 if (ret)

@@ -4,8 +4,8 @@
 
 package com.spoqa.battery;
 
-public interface ExceptionHandler<C, T extends Throwable> {
+public interface ExceptionHandler<C> {
 
-    public boolean onException(C context, T error);
+    public boolean onException(C context, Throwable error);
 
 }
