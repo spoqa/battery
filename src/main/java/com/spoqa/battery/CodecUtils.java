@@ -11,9 +11,14 @@ import com.spoqa.battery.exceptions.RpcException;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.GenericDeclaration;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -168,7 +173,7 @@ public final class CodecUtils {
 
     public static Class getGenericTypeOfField(Class clazz, String fieldName) {
         try {
-            Field field = clazz.getDeclaredField(fieldName);
+            Field field = clazz.getField(fieldName);
             Class declaringType = field.getType();
             int genericTypePosition;
             if (isSubclassOf(declaringType, PRIMITIVE_TYPE_LIST)) {
@@ -180,7 +185,12 @@ public final class CodecUtils {
                 return null;
             }
             ParameterizedType type = (ParameterizedType) field.getGenericType();
-            return (Class) type.getActualTypeArguments()[genericTypePosition];
+            Object o = type.getActualTypeArguments()[genericTypePosition];
+            if (o instanceof TypeVariable) {
+                return resolveActualTypeArgs(clazz, (TypeVariable) o);
+            } else {
+                return (Class) type.getActualTypeArguments()[genericTypePosition];
+            }
         } catch (NoSuchFieldException e) {
             Logger.error(TAG, String.format("No such field %1$s in %2$s", fieldName, clazz.getName()));
             e.printStackTrace();
@@ -188,9 +198,76 @@ public final class CodecUtils {
         }
     }
 
+    public static <T> Class resolveActualTypeArgs (Class<? extends T> offspring, TypeVariable tv, Type... actualArgs) {
+        assert offspring != null;
+        assert actualArgs.length == 0 || actualArgs.length == offspring.getTypeParameters().length;
+
+        Class base = (Class) tv.getGenericDeclaration();
+
+        if (actualArgs.length == 0) {
+            actualArgs = offspring.getTypeParameters();
+        }
+
+        Map<String, Type> typeVariables = new HashMap<String, Type>();
+        for (int i = 0; i < actualArgs.length; i++) {
+            TypeVariable<?> typeVariable = (TypeVariable<?>) offspring.getTypeParameters()[i];
+            if (typeVariable.getName().equals(tv.getName()))
+                return (Class) actualArgs[i];
+            typeVariables.put(typeVariable.getName(), actualArgs[i]);
+        }
+
+        List<Type> ancestors = new LinkedList<Type>();
+        if (offspring.getGenericSuperclass() != null) {
+            ancestors.add(offspring.getGenericSuperclass());
+        }
+        for (Type t : offspring.getGenericInterfaces()) {
+            ancestors.add(t);
+        }
+
+        for (Type type : ancestors) {
+            if (type instanceof Class<?>) {
+                Class<?> ancestorClass = (Class<?>) type;
+                if (base.isAssignableFrom(ancestorClass)) {
+                    Logger.debug(TAG, "recurse 1");
+                    Class result = resolveActualTypeArgs((Class<? extends T>) ancestorClass, tv);
+                    if (result != null) {
+                        return result;
+                    }
+                }
+            }
+            if (type instanceof ParameterizedType) {
+                ParameterizedType parameterizedType = (ParameterizedType) type;
+                Type rawType = parameterizedType.getRawType();
+                if (rawType instanceof Class<?>) {
+                    Class<?> rawTypeClass = (Class<?>) rawType;
+                    if (base.isAssignableFrom(rawTypeClass)) {
+
+                        List<Type> resolvedTypes = new LinkedList<Type>();
+                        for (Type t : parameterizedType.getActualTypeArguments()) {
+                            if (t instanceof TypeVariable<?>) {
+                                Type resolvedType = typeVariables.get(((TypeVariable<?>) t).getName());
+                                resolvedTypes.add(resolvedType != null ? resolvedType : t);
+                            } else {
+                                resolvedTypes.add(t);
+                            }
+                        }
+
+                        Logger.debug(TAG, "recurse 2");
+                        Class result = resolveActualTypeArgs((Class<? extends T>) rawTypeClass, tv, resolvedTypes.toArray(new Type[] {}));
+                        if (result != null) {
+                            return result;
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
     public static Class getGenericTypeOfMethod(Class clazz, String methodName, Class paramType) {
         try {
-            Method method = clazz.getDeclaredMethod(methodName, paramType);
+            Method method = clazz.getMethod(methodName, paramType);
             int genericTypePosition;
             if (isSubclassOf(paramType, PRIMITIVE_TYPE_LIST)) {
                 genericTypePosition = 0;
