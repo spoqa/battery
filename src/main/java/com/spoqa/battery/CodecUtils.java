@@ -198,7 +198,7 @@ public final class CodecUtils {
         }
     }
 
-    public static <T> Class resolveActualTypeArgs (Class<? extends T> offspring, TypeVariable tv, Type... actualArgs) {
+    public static <T> Class resolveActualTypeArgs(Class<? extends T> offspring, TypeVariable tv, Type... actualArgs) {
         assert offspring != null;
         assert actualArgs.length == 0 || actualArgs.length == offspring.getTypeParameters().length;
 
@@ -228,7 +228,6 @@ public final class CodecUtils {
             if (type instanceof Class<?>) {
                 Class<?> ancestorClass = (Class<?>) type;
                 if (base.isAssignableFrom(ancestorClass)) {
-                    Logger.debug(TAG, "recurse 1");
                     Class result = resolveActualTypeArgs((Class<? extends T>) ancestorClass, tv);
                     if (result != null) {
                         return result;
@@ -252,7 +251,6 @@ public final class CodecUtils {
                             }
                         }
 
-                        Logger.debug(TAG, "recurse 2");
                         Class result = resolveActualTypeArgs((Class<? extends T>) rawTypeClass, tv, resolvedTypes.toArray(new Type[] {}));
                         if (result != null) {
                             return result;

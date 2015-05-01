@@ -11,6 +11,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.TimeZone;
 
 public class Rfc1123DateAdapter implements TypeAdapter<Date> {
 
@@ -18,8 +19,8 @@ public class Rfc1123DateAdapter implements TypeAdapter<Date> {
     private SimpleDateFormat mDateWithMicrosecFormat;
 
     public Rfc1123DateAdapter() {
-        mDateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.getDefault());
-        mDateWithMicrosecFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss.SSS Z", Locale.getDefault());
+        mDateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
+        mDateWithMicrosecFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss.SSS z", Locale.US);
     }
 
     @Override
@@ -35,7 +36,8 @@ public class Rfc1123DateAdapter implements TypeAdapter<Date> {
             try {
                 return mDateWithMicrosecFormat.parse(s);
             } catch (ParseException e2) {
-                throw new DeserializationException(e);
+                //return new Date();
+                throw new DeserializationException(e2);
             }
         }
     }
