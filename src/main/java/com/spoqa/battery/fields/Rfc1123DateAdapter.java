@@ -23,6 +23,12 @@ public class Rfc1123DateAdapter implements TypeAdapter<Date> {
         mDateWithMicrosecFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss.SSS z", Locale.US);
     }
 
+    public Rfc1123DateAdapter(TimeZone timezone) {
+        this();
+        mDateFormat.setTimeZone(timezone);
+        mDateWithMicrosecFormat.setTimeZone(timezone);
+    }
+
     @Override
     public Class getType() {
         return Date.class;

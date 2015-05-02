@@ -171,15 +171,21 @@ public final class RequestFactory {
                 String paramName = field.getName();
                 try {
                     Object fieldObject = field.get(object);
+                    Class<?> fieldType = field.getType();
                     if (fieldObject == null ||
-                            (!CodecUtils.isPrimitive(fieldObject.getClass()) &&
-                             !CodecUtils.isString(fieldObject))) {
+                            (!CodecUtils.isPrimitive(fieldType) &&
+                             !CodecUtils.isString(fieldObject)) &&
+                             !context.containsTypeAdapter(fieldType)) {
                         Logger.error(TAG, String.format("Type '%1$s' of field '%2$s' could not be built into URI.",
-                                fieldObject.getClass().getName(), paramName));
+                                fieldType.getName(), paramName));
                         return null;
                     }
 
-                    if (fieldObject instanceof String) {
+                    if (context.containsTypeAdapter(fieldType)) {
+                        try {
+                            parameters[i] = URLEncoder.encode(context.queryTypeAdapter(fieldType).encode(fieldObject), "utf-8");
+                        } catch (UnsupportedEncodingException e) {}
+                    } else if (fieldObject instanceof String) {
                         try {
                             parameters[i] = URLEncoder.encode((String) fieldObject, "utf-8");
                         } catch (UnsupportedEncodingException e) {}
@@ -187,6 +193,10 @@ public final class RequestFactory {
                         parameters[i] = fieldObject;
                     }
                 } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                    ++i;
+                    continue;
+                } catch (SerializationException e) {
                     e.printStackTrace();
                     ++i;
                     continue;
@@ -209,9 +219,10 @@ public final class RequestFactory {
                     !CodecUtils.isFloat(fieldType) &&
                     !CodecUtils.isDouble(fieldType) &&
                     !CodecUtils.isLong(fieldType) &&
-                    !CodecUtils.isList(fieldType)) {
+                    !CodecUtils.isList(fieldType) &&
+                    !context.containsTypeAdapter(fieldType)) {
                 Logger.error(TAG, String.format("Type '%1$s' of field '%2$s' could not be built into URI.",
-                        field.getClass().getName(), field.getName()));
+                        fieldType.getName(), field.getName()));
                 continue;
             }
 
@@ -222,8 +233,16 @@ public final class RequestFactory {
             else
                 fieldName = translator.localToRemote(fieldName);
             try {
-                params.put(fieldName, field.get(object));
+                if (context.containsTypeAdapter(fieldType)) {
+                    Object obj = field.get(object);
+                    if (obj != null)
+                        params.put(fieldName, context.queryTypeAdapter(fieldType).encode(field.get(object)));
+                } else {
+                    params.put(fieldName, field.get(object));
+                }
             } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (SerializationException e) {
                 e.printStackTrace();
             }
         }
