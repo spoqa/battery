@@ -14,6 +14,7 @@ import com.android.volley.toolbox.Volley;
 
 import com.spoqa.battery.CodecUtils;
 import com.spoqa.battery.Config;
+import com.spoqa.battery.PlatformUtils;
 import com.spoqa.battery.RpcContext;
 import com.spoqa.battery.FieldNameTranslator;
 import com.spoqa.battery.HttpRequest;
@@ -35,6 +36,12 @@ import rx.subjects.PublishSubject;
 
 public class AndroidRpcContext extends RpcContext<Context> {
 
+    static {
+        /* register up */
+        Logger.registerLogger(new AndroidLogger());
+        PlatformUtils.registerPlatformUtils(new AndroidPlatformUtilsImpl());
+    }
+
     private static final String TAG = "AndroidExecutionContext";
 
     private RequestQueue mRequestQueue;
@@ -44,9 +51,6 @@ public class AndroidRpcContext extends RpcContext<Context> {
         super();
         mAndroidContext = androidApplicationContext;
         mRequestQueue = requestQueue;
-
-        /* set up android logger */
-        Logger.registerLogger(new AndroidLogger());
     }
 
     public AndroidRpcContext(Context androidApplicationContext) {
