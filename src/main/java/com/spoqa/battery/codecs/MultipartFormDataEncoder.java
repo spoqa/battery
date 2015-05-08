@@ -93,7 +93,7 @@ public class MultipartFormDataEncoder implements RequestSerializer {
                 } else if (element instanceof File) {
                     try {
                         File file = (File) element;
-                        addPart(foreignName, new FileInputStream(file), file.getAbsolutePath());
+                        addPart(foreignName, new FileInputStream(file), file.getName());
                     } catch (FileNotFoundException e) {
                         e.printStackTrace();
                         Logger.warn(TAG, String.format("Field %1$s is not serializable: %2$s", type.getName(), e.toString()));
@@ -142,18 +142,23 @@ public class MultipartFormDataEncoder implements RequestSerializer {
         if (mimeType == null)
             mimeType = "application/octet-stream";
 
-        String header = "--%1$s\r\nContent-Disposition: form-data; name=\"%2$s\"\r\n" +
-                "Content-Type: %3$s\r\n\r\n";
+        String header;
+        if (fileName.length() > 0) {
+            header = String.format("--%1$s\r\nContent-Disposition: form-data; name=\"%2$s\"; filename=\"%3$s\"\r\n" +
+                    "Content-Type: %4$s\r\n\r\n", mBoundary, fieldName, fileName, mimeType);
+        } else {
+            header = String.format("--%1$s\r\nContent-Disposition: form-data; name=\"%2$s\"\r\n" +
+                    "Content-Type: %3$s\r\n\r\n", mBoundary, fieldName, mimeType);
+        }
 
         try {
-            stream.reset();
-            mOutputStream.write(String.format(header, mBoundary, fieldName, mimeType).getBytes("utf-8"));
+            mOutputStream.write(header.getBytes("utf-8"));
             int read;
             while ((read = stream.read(buffer)) > 0)
                 mOutputStream.write(buffer, 0, read);
             mOutputStream.write("\r\n\r\n".getBytes("utf-8"));
         } catch (IOException e) {
-            e.printStackTrace();;
+            e.printStackTrace();
         }
     }
 
