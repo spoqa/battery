@@ -33,6 +33,7 @@ public class HttpRequest {
     private byte[] mRequestBody;
     private FieldNameTranslator mFieldNameTranslator;
     private Object mRequestObject;
+    private String mContentType;
 
     public HttpRequest(String uri) {
         mMethod = Methods.GET;
@@ -73,6 +74,10 @@ public class HttpRequest {
         mRequestObject = requestObject;
     }
 
+    public void setContentType(String contentType) {
+        mContentType = contentType;
+    }
+
     public void putHeader(String key, String value) {
         mHeaders.put(key, value);
     }
@@ -109,6 +114,10 @@ public class HttpRequest {
 
     public int getMethod() {
         return mMethod;
+    }
+
+    public String getContentType() {
+        return mContentType;
     }
 
     public FieldNameTranslator getFieldNameTranslator() {

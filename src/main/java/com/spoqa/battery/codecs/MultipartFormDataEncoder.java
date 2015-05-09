@@ -123,7 +123,7 @@ public class MultipartFormDataEncoder implements RequestSerializer {
         try {
             mOutputStream.write(String.format(header, mBoundary, fieldName).getBytes("utf-8"));
             mOutputStream.write(formData.getBytes("utf-8"));
-            mOutputStream.write("\r\n\r\n".getBytes("utf-8"));
+            mOutputStream.write("\r\n".getBytes("utf-8"));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -156,7 +156,7 @@ public class MultipartFormDataEncoder implements RequestSerializer {
             int read;
             while ((read = stream.read(buffer)) > 0)
                 mOutputStream.write(buffer, 0, read);
-            mOutputStream.write("\r\n\r\n".getBytes("utf-8"));
+            mOutputStream.write("\r\n".getBytes("utf-8"));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -164,7 +164,7 @@ public class MultipartFormDataEncoder implements RequestSerializer {
 
     @Override
     public String serializationContentType() {
-        return String.format("%1$s; boundary=%2$s; charset=utf-8", MIME_TYPE, mBoundary);
+        return String.format("%1$s; boundary=%2$s", MIME_TYPE, mBoundary);
     }
 
     @Override

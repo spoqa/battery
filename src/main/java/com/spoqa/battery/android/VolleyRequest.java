@@ -20,6 +20,7 @@ public class VolleyRequest extends Request<ResponseDelegate> {
     private Response.Listener<ResponseDelegate> mListener;
     private Map<String, String> mHeaders;
     private byte[] mRequestBody;
+    private String mContentType;
 
     public VolleyRequest(HttpRequest request, Response.Listener<ResponseDelegate> listener,
                          Response.ErrorListener errorListener) {
@@ -27,6 +28,7 @@ public class VolleyRequest extends Request<ResponseDelegate> {
         mListener = listener;
         mHeaders = request.getHeaders();
         mRequestBody = request.getRequestBody();
+        mContentType = request.getContentType();
     }
 
     static private int translateVolleyHttpMethod(int method) {
@@ -71,14 +73,12 @@ public class VolleyRequest extends Request<ResponseDelegate> {
 
     @Override
     public String getBodyContentType() {
-        if (mHeaders.containsKey(HttpRequest.HEADER_CONTENT_TYPE))
-            return mHeaders.get(HttpRequest.HEADER_CONTENT_TYPE);
-        else
-            return null;
+        return mContentType;
     }
 
     @Override
     public byte[] getBody() {
         return mRequestBody;
     }
+
 }

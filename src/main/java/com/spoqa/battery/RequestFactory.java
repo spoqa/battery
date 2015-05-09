@@ -86,7 +86,7 @@ public final class RequestFactory {
                 }
             } else if (context.getRequestSerializer() != null) {
                 RequestSerializer serializer = context.getRequestSerializer();
-                request.putHeader(HttpRequest.HEADER_CONTENT_TYPE, serializer.serializationContentType());
+                request.setContentType(serializer.serializationContentType());
                 request.setRequestBody(serializer.serializeObject(object, nameTranslator));
             } else {
                 Logger.warn(TAG, String.format("Current RpcObject %1$s does not have " +
