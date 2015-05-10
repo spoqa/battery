@@ -284,8 +284,8 @@ public final class ObjectBuilder {
                 }
 
                 if (hasValue) {
-                    if (internalObject == null) {
-                        m.invoke(dest, null);
+                    if (internalObject == null || value == null) {
+                        //m.invoke(dest, null);
                     } else if (context.containsTypeAdapter(fieldType) &&
                             CodecUtils.isBuiltIn(value.getClass())) {
                         TypeAdapter codec = context.queryTypeAdapter(fieldType);
