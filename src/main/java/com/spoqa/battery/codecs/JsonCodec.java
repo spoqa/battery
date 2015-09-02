@@ -196,7 +196,12 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
 
                     @Override
                     public Object next() {
-                        return jsonArray.opt(index++);
+                        Object o = jsonArray.opt(index++);
+
+                        if (o == JSONObject.NULL)
+                            return null;
+
+                        return o;
                     }
 
                     @Override
