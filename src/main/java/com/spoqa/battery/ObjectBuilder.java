@@ -337,8 +337,12 @@ public final class ObjectBuilder {
                 }
             }
         } catch (Exception e) {
+            if (BuildConfig.DEBUG)
+                e.printStackTrace();
             throw new DeserializationException(e);
         } catch (IncompatibleTypeException e) {
+            if (BuildConfig.DEBUG)
+                e.printStackTrace();
             throw new DeserializationException(e);
         }
     }
@@ -352,7 +356,9 @@ public final class ObjectBuilder {
             Integer index = 0;
 
             for (Object element : deserializer.queryArrayChildren(internalArray)) {
-                if (CodecUtils.isList(innerType)) {
+                if (element == null) {
+                    add.invoke(output, (Object) null);
+                } else if (CodecUtils.isList(innerType)) {
                     /* TODO implement nested list */
                 } else if (CodecUtils.isMap(innerType)) {
                     /* TODO implement nested map */
