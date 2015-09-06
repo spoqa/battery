@@ -4,9 +4,12 @@
 
 package com.spoqa.battery.android;
 
+import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.NetworkResponse;
 import com.android.volley.Request;
 import com.android.volley.Response;
+import com.android.volley.RetryPolicy;
+import com.android.volley.VolleyError;
 import com.android.volley.toolbox.HttpHeaderParser;
 import com.spoqa.battery.HttpRequest;
 import com.spoqa.battery.Logger;
@@ -29,6 +32,14 @@ public class VolleyRequest extends Request<ResponseDelegate> {
         mHeaders = request.getHeaders();
         mRequestBody = request.getRequestBody();
         mContentType = request.getContentType();
+
+        // forbid retry if not GET
+        if (request.getMethod() != HttpRequest.Methods.GET) {
+            setRetryPolicy(new DefaultRetryPolicy(
+                    10000,
+                    0,
+                    DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+        }
     }
 
     static private int translateVolleyHttpMethod(int method) {
