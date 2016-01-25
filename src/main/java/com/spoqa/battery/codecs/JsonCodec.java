@@ -9,6 +9,7 @@ import com.spoqa.battery.FieldNameTranslator;
 import com.spoqa.battery.Logger;
 import com.spoqa.battery.RequestSerializer;
 import com.spoqa.battery.ResponseDeserializer;
+import com.spoqa.battery.TypeAdapterCollection;
 import com.spoqa.battery.annotations.RequestBody;
 import com.spoqa.battery.exceptions.DeserializationException;
 import com.spoqa.battery.exceptions.SerializationException;
@@ -35,9 +36,10 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
     /* serializer */
 
     @Override
-    public byte[] serializeObject(Object o, FieldNameTranslator translator)
+    public byte[] serializeObject(Object o, FieldNameTranslator translator,
+                                  TypeAdapterCollection typeAdapters)
             throws SerializationException {
-        JSONObject body = visitObject(o, translator);
+        JSONObject body = visitObject(o, translator, typeAdapters);
 
         if (body != null) {
             try {
@@ -60,7 +62,8 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
         return true;
     }
 
-    private JSONObject visitObject(Object o, FieldNameTranslator translator) throws SerializationException {
+    private JSONObject visitObject(Object o, FieldNameTranslator translator,
+                                   TypeAdapterCollection typeAdapters) throws SerializationException {
         Iterable<Field> fields = CodecUtils.getAnnotatedFields(null, RequestBody.class, o.getClass());
 
         JSONObject body = new JSONObject();
@@ -97,11 +100,13 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
                 else if (CodecUtils.isLong(type))
                     body.put(foreignName, (Long) element);
                 else if (CodecUtils.isSubclassOf(element.getClass(), List.class))
-                    body.put(foreignName, visitArray((List<Object>) element, translator));
+                    body.put(foreignName, visitArray((List<Object>) element, translator, typeAdapters));
                 else if (element.getClass().isEnum())
                     body.put(foreignName, element.toString());
+                else if (typeAdapters.contains(element.getClass()))
+                    body.put(foreignName, typeAdapters.query(element.getClass()).encode(element));
                 else
-                    body.put(foreignName, visitObject(element, translator));
+                    body.put(foreignName, visitObject(element, translator, typeAdapters));
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
                 continue;
@@ -117,7 +122,8 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
             return null;
     }
 
-    private JSONArray visitArray(Iterable<Object> a, FieldNameTranslator translator) throws SerializationException {
+    private JSONArray visitArray(Iterable<Object> a, FieldNameTranslator translator,
+                                 TypeAdapterCollection typeAdapters) throws SerializationException {
         JSONArray array = new JSONArray();
 
         for (Object element : a) {
@@ -135,11 +141,13 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
             else if (CodecUtils.isLong(type))
                 array.put((Long) element);
             else if (CodecUtils.isSubclassOf(element.getClass(), List.class))
-                array.put(visitArray((List<Object>) element, translator));
+                array.put(visitArray((List<Object>) element, translator, typeAdapters));
             else if (element.getClass().isEnum())
                 array.put(element.toString());
+            else if (typeAdapters.contains(element.getClass()))
+                array.put(typeAdapters.query(element.getClass()).encode(element));
             else
-                array.put(visitObject(element, translator));
+                array.put(visitObject(element, translator, typeAdapters));
         }
 
         return array;

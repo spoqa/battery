@@ -39,8 +39,8 @@ public final class ObjectBuilder {
         }
     }
 
-    public static void build(RpcContext context, String contentType, String input,
-                                   Object object, FieldNameTranslator translator)
+    public static void build(String contentType, String input, Object object,
+                             FieldNameTranslator translator, TypeAdapterCollection typeAdapters)
             throws DeserializationException {
         String mime = extractMime(contentType);
 
@@ -63,8 +63,8 @@ public final class ObjectBuilder {
                 responseObject = object;
                 filterByAnnotation = true;
             }
-            deserializeObject(context, cache, sDeserializerMap.get(mime), input, responseObject,
-                    translator, filterByAnnotation);
+            deserializeObject(cache, sDeserializerMap.get(mime), input, responseObject,
+                    translator, typeAdapters, filterByAnnotation);
         } catch (RpcException e) {
             throw new DeserializationException(e);
         }
@@ -77,20 +77,20 @@ public final class ObjectBuilder {
         return parts[0].trim();
     }
 
-    private static void deserializeObject(RpcContext context, ReflectionCache cache,
-                                          ResponseDeserializer deserializer, String input, Object object,
-                                          FieldNameTranslator translator, boolean filterByAnnotation)
+    private static void deserializeObject(ReflectionCache cache, ResponseDeserializer deserializer,
+                                          String input, Object object, FieldNameTranslator translator,
+                                          TypeAdapterCollection typeAdapters, boolean filterByAnnotation)
             throws DeserializationException {
         /* Let's assume the root element is always an object */
         Object internalObject = deserializer.parseInput(input);
 
-        visitObject(context, cache, deserializer, internalObject, object,
-                translator, filterByAnnotation);
+        visitObject(cache, deserializer, internalObject, object,
+                translator, typeAdapters, filterByAnnotation);
     }
 
-    private static void visitObject(RpcContext context, ReflectionCache cache,
-                                    ResponseDeserializer deserializer, Object internalObject,
-                                    Object dest, FieldNameTranslator translator,
+    private static void visitObject(ReflectionCache cache, ResponseDeserializer deserializer,
+                                    Object internalObject, Object dest, FieldNameTranslator translator,
+                                    TypeAdapterCollection typeAdapters,
                                     boolean filterByAnnotation)
             throws DeserializationException {
         List<Field> fields;
@@ -165,9 +165,9 @@ public final class ObjectBuilder {
                 if (hasValue) {
                     if (internalObject == null || value == null) {
                         f.set(dest, null);
-                    } else if (context.containsTypeAdapter(fieldType) &&
+                    } else if (typeAdapters.contains(fieldType) &&
                             CodecUtils.isBuiltIn(value.getClass())) {
-                        TypeAdapter codec = context.queryTypeAdapter(fieldType);
+                        TypeAdapter codec = typeAdapters.query(fieldType);
                         f.set(dest, codec.decode(value.toString()));
                     } else if (CodecUtils.isString(fieldType)) {
                         f.set(dest, value.toString());
@@ -191,8 +191,9 @@ public final class ObjectBuilder {
                             continue;
                         }
                         List newList = ArrayList.class.newInstance();
-                        visitArray(context, cache, deserializer, value, newList,
-                                CodecUtils.getGenericTypeOfField(dest.getClass(), f.getName()), translator);
+                        visitArray(cache, deserializer, value, newList,
+                                CodecUtils.getGenericTypeOfField(dest.getClass(), f.getName()),
+                                translator, typeAdapters);
                         f.set(dest, newList);
                     } else if (CodecUtils.isMap(fieldType)) {
                         Map newMap = (Map) fieldType.newInstance();
@@ -216,7 +217,8 @@ public final class ObjectBuilder {
                         if (!CodecUtils.shouldBeExcluded(fieldType)) {
                             /* or it should be a POJO... */
                             Object newObject = fieldType.newInstance();
-                            visitObject(context, cache, deserializer, value, newObject, translator, false);
+                            visitObject(cache, deserializer, value, newObject, translator,
+                                    typeAdapters, false);
                             f.set(dest, newObject);
                         }
                     }
@@ -286,9 +288,9 @@ public final class ObjectBuilder {
                 if (hasValue) {
                     if (internalObject == null || value == null) {
                         //m.invoke(dest, null);
-                    } else if (context.containsTypeAdapter(fieldType) &&
+                    } else if (typeAdapters.contains(fieldType) &&
                             CodecUtils.isBuiltIn(value.getClass())) {
-                        TypeAdapter codec = context.queryTypeAdapter(fieldType);
+                        TypeAdapter codec = typeAdapters.query(fieldType);
                         m.invoke(dest, codec.decode(value.toString()));
                     } else if (CodecUtils.isString(fieldType)) {
                         m.invoke(dest, value.toString());
@@ -309,9 +311,9 @@ public final class ObjectBuilder {
                             continue;
                         }
                         List newList = ArrayList.class.newInstance();
-                        visitArray(context, cache, deserializer, value, newList,
+                        visitArray(cache, deserializer, value, newList,
                                 CodecUtils.getGenericTypeOfMethod(dest.getClass(), m.getName(), List.class),
-                                translator);
+                                translator, typeAdapters);
                         m.invoke(dest, newList);
                     } else if (CodecUtils.isMap(fieldType)) {
                         Map newMap = (Map) fieldType.newInstance();
@@ -327,7 +329,8 @@ public final class ObjectBuilder {
                         if (!CodecUtils.shouldBeExcluded(fieldType)) {
                         /* or it should be a POJO... */
                             Object newObject = fieldType.newInstance();
-                            visitObject(context, cache, deserializer, value, newObject, translator, false);
+                            visitObject(cache, deserializer, value, newObject, translator,
+                                    typeAdapters, false);
                             m.invoke(dest, newObject);
                         }
                     }
@@ -347,10 +350,11 @@ public final class ObjectBuilder {
         }
     }
 
-    private static void visitArray(RpcContext context, ReflectionCache cache,
+    private static void visitArray(ReflectionCache cache,
                                    ResponseDeserializer deserializer, Object internalArray,
                                    List<?> output, Class innerType,
-                                   FieldNameTranslator translator) throws DeserializationException {
+                                   FieldNameTranslator translator,
+                                   TypeAdapterCollection typeAdapters) throws DeserializationException {
         try {
             Method add = List.class.getDeclaredMethod("add", Object.class);
             Integer index = 0;
@@ -364,13 +368,13 @@ public final class ObjectBuilder {
                     /* TODO implement nested map */
                 } else if (deserializer.isObject(element.getClass())) {
                     Object o = innerType.newInstance();
-                    visitObject(context, cache, deserializer, element, o, translator, false);
+                    visitObject(cache, deserializer, element, o, translator, typeAdapters, false);
                     add.invoke(output, o);
                 } else {
                     Object newElem = element;
                     try {
-                        if (context.containsTypeAdapter(innerType))
-                            newElem = context.queryTypeAdapter(innerType).decode(element.toString());
+                        if (typeAdapters.contains(innerType))
+                            newElem = typeAdapters.query(innerType).decode(element.toString());
                         else if (CodecUtils.isString(innerType))
                             newElem = CodecUtils.parseString(element);
                         else if (CodecUtils.isInteger(innerType))

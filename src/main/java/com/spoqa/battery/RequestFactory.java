@@ -54,6 +54,7 @@ public final class RequestFactory {
         }
 
         FieldNameTranslator nameTranslator = new FieldNameTranslator(remote, local);
+        TypeAdapterCollection typeAdapters = context.getTypeAdapters();
 
         Map<String, Object> parameters = new HashMap<String, Object>();
         int method = annotation.method();
@@ -78,7 +79,7 @@ public final class RequestFactory {
                 try {
                     RequestSerializer serializer = (RequestSerializer) serializerCls.newInstance();
                     request.putHeader(HttpRequest.HEADER_CONTENT_TYPE, serializer.serializationContentType());
-                    request.setRequestBody(serializer.serializeObject(object, nameTranslator));
+                    request.setRequestBody(serializer.serializeObject(object, nameTranslator, typeAdapters));
                 } catch (InstantiationException e) {
                     e.printStackTrace();
                 } catch (IllegalAccessException e) {
@@ -87,7 +88,7 @@ public final class RequestFactory {
             } else if (context.getRequestSerializer() != null) {
                 RequestSerializer serializer = context.getRequestSerializer();
                 request.setContentType(serializer.serializationContentType());
-                request.setRequestBody(serializer.serializeObject(object, nameTranslator));
+                request.setRequestBody(serializer.serializeObject(object, nameTranslator, typeAdapters));
             } else {
                 Logger.warn(TAG, String.format("Current RpcObject %1$s does not have " +
                                 "RequestSerializer specified.", object.getClass().getName()));
@@ -144,6 +145,8 @@ public final class RequestFactory {
             uri = context.getDefaultUriPrefix() + "/" + uri;
         }
 
+        TypeAdapterCollection typeAdapters = context.getTypeAdapters();
+
         /* Build REST URI fragment */
         Class self = object.getClass();
         List<Field> uriFragments = CodecUtils.getAnnotatedFields(null, UriPath.class, self);
@@ -175,15 +178,15 @@ public final class RequestFactory {
                     if (fieldObject == null ||
                             (!CodecUtils.isPrimitive(fieldType) &&
                              !CodecUtils.isString(fieldObject)) &&
-                             !context.containsTypeAdapter(fieldType)) {
+                             !typeAdapters.contains(fieldType)) {
                         Logger.error(TAG, String.format("Type '%1$s' of field '%2$s' could not be built into URI.",
                                 fieldType.getName(), paramName));
                         return null;
                     }
 
-                    if (context.containsTypeAdapter(fieldType)) {
+                    if (typeAdapters.contains(fieldType)) {
                         try {
-                            parameters[i] = URLEncoder.encode(context.queryTypeAdapter(fieldType).encode(fieldObject), "utf-8");
+                            parameters[i] = URLEncoder.encode(typeAdapters.query(fieldType).encode(fieldObject), "utf-8");
                         } catch (UnsupportedEncodingException e) {}
                     } else if (fieldObject instanceof String) {
                         try {
@@ -220,7 +223,7 @@ public final class RequestFactory {
                     !CodecUtils.isDouble(fieldType) &&
                     !CodecUtils.isLong(fieldType) &&
                     !CodecUtils.isList(fieldType) &&
-                    !context.containsTypeAdapter(fieldType)) {
+                    !typeAdapters.contains(fieldType)) {
                 Logger.error(TAG, String.format("Type '%1$s' of field '%2$s' could not be built into URI.",
                         fieldType.getName(), field.getName()));
                 continue;
@@ -233,10 +236,10 @@ public final class RequestFactory {
             else
                 fieldName = translator.localToRemote(fieldName);
             try {
-                if (context.containsTypeAdapter(fieldType)) {
+                if (typeAdapters.contains(fieldType)) {
                     Object obj = field.get(object);
                     if (obj != null)
-                        params.put(fieldName, context.queryTypeAdapter(fieldType).encode(field.get(object)));
+                        params.put(fieldName, typeAdapters.query(fieldType).encode(field.get(object)));
                 } else {
                     params.put(fieldName, field.get(object));
                 }

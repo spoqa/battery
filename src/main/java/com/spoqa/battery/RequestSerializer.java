@@ -8,7 +8,8 @@ import com.spoqa.battery.exceptions.SerializationException;
 
 public interface RequestSerializer {
 
-    public byte[] serializeObject(Object o, FieldNameTranslator translator)
+    public byte[] serializeObject(Object o, FieldNameTranslator translator,
+                                  TypeAdapterCollection typeAdapters)
             throws SerializationException;
 
     public String serializationContentType();

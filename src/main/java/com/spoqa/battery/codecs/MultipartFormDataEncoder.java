@@ -9,6 +9,7 @@ import com.spoqa.battery.FieldNameTranslator;
 import com.spoqa.battery.Logger;
 import com.spoqa.battery.PlatformUtils;
 import com.spoqa.battery.RequestSerializer;
+import com.spoqa.battery.TypeAdapterCollection;
 import com.spoqa.battery.annotations.RequestBody;
 import com.spoqa.battery.exceptions.SerializationException;
 
@@ -36,7 +37,8 @@ public class MultipartFormDataEncoder implements RequestSerializer {
     }
 
     @Override
-    public byte[] serializeObject(Object o, FieldNameTranslator translator) throws SerializationException {
+    public byte[] serializeObject(Object o, FieldNameTranslator translator,
+                                  TypeAdapterCollection typeAdapters) throws SerializationException {
         mOutputStream = new ByteArrayOutputStream();
 
         List<Field> fields = CodecUtils.getAnnotatedFields(null, RequestBody.class, o.getClass());
@@ -98,6 +100,8 @@ public class MultipartFormDataEncoder implements RequestSerializer {
                         e.printStackTrace();
                         Logger.warn(TAG, String.format("Field %1$s is not serializable: %2$s", type.getName(), e.toString()));
                     }
+                } else if (typeAdapters.contains(type)) {
+                    addPart(foreignName, typeAdapters.query(type).encode(element));
                 } else {
                     Logger.warn(TAG, String.format("Field %1$s is not serializable", type.getName()));
                 }

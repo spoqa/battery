@@ -8,6 +8,7 @@ import com.spoqa.battery.CodecUtils;
 import com.spoqa.battery.FieldNameTranslator;
 import com.spoqa.battery.Logger;
 import com.spoqa.battery.RequestSerializer;
+import com.spoqa.battery.TypeAdapterCollection;
 import com.spoqa.battery.annotations.RequestBody;
 import com.spoqa.battery.exceptions.SerializationException;
 
@@ -28,7 +29,8 @@ public class UrlEncodedFormEncoder implements RequestSerializer {
     }
 
     @Override
-    public byte[] serializeObject(Object o, FieldNameTranslator translator) throws SerializationException {
+    public byte[] serializeObject(Object o, FieldNameTranslator translator,
+                                  TypeAdapterCollection typeAdapters) throws SerializationException {
         StringBuilder sb = new StringBuilder();
 
         List<Field> fields = CodecUtils.getAnnotatedFields(null, RequestBody.class, o.getClass());
@@ -67,6 +69,8 @@ public class UrlEncodedFormEncoder implements RequestSerializer {
                         append(sb, foreignName, innerElement.toString());
                 } else if (element instanceof InputStream) {
                     Logger.warn(TAG, "Could not attach byte stream");
+                } else if (typeAdapters.contains(type)) {
+                    append(sb, foreignName, typeAdapters.query(type).encode(element));
                 } else {
                     Logger.warn(TAG, String.format("Field %1$s is not serializable", type.getName()));
                 }

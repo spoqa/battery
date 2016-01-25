@@ -111,8 +111,8 @@ public class AndroidRpcContext extends RpcContext<Context> {
                     String contentType = rpcObjectDecl.expectedContentType();
                     if (contentType == null || contentType.length() == 0)
                         contentType = s.contentType();
-                    ObjectBuilder.build(AndroidRpcContext.this, contentType, s.data(),
-                            rpcObject, nameTranslator);
+                    ObjectBuilder.build(contentType, s.data(),
+                            rpcObject, nameTranslator, getTypeAdapters());
 
                     if (getResponseValidator() != null) {
                         try {
