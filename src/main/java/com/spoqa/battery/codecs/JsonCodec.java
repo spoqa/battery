@@ -99,9 +99,9 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
                     body.put(foreignName, (Integer) element);
                 else if (CodecUtils.isLong(type))
                     body.put(foreignName, (Long) element);
-                else if (CodecUtils.isSubclassOf(element.getClass(), List.class))
+                else if (CodecUtils.isSubclassOf(type, List.class))
                     body.put(foreignName, visitArray((List<Object>) element, translator, typeAdapters));
-                else if (element.getClass().isEnum())
+                else if (type.isEnum())
                     body.put(foreignName, element.toString());
                 else if (typeAdapters.contains(element.getClass()))
                     body.put(foreignName, typeAdapters.query(element.getClass()).encode(element));
@@ -128,6 +128,7 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
 
         for (Object element : a) {
             Class type = element.getClass();
+
             if (CodecUtils.isString(type))
                 array.put((String) element);
             else if (CodecUtils.isFloat(type))
@@ -140,9 +141,9 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
                 array.put((Integer) element);
             else if (CodecUtils.isLong(type))
                 array.put((Long) element);
-            else if (CodecUtils.isSubclassOf(element.getClass(), List.class))
+            else if (CodecUtils.isSubclassOf(type, List.class))
                 array.put(visitArray((List<Object>) element, translator, typeAdapters));
-            else if (element.getClass().isEnum())
+            else if (type.isEnum())
                 array.put(element.toString());
             else if (typeAdapters.contains(element.getClass()))
                 array.put(typeAdapters.query(element.getClass()).encode(element));
