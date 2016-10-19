@@ -4,15 +4,15 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:1.0.1' 
+        classpath 'com.android.tools.build:gradle:2.2.0'
     }
 }
 
-apply plugin: 'android-library'
+apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 21
-    buildToolsVersion "21.1.2"
+    compileSdkVersion 24
+    buildToolsVersion "24.0.3"
 
     lintOptions {
         abortOnError false
@@ -24,7 +24,7 @@ repositories {
 }
 
 dependencies {
-    compile 'com.mcxiaoke.volley:library:1.0.10'
+    compile 'com.android.volley:volley:1.0.0'
     compile 'com.squareup.okhttp:okhttp:2.2.0'
     compile 'com.squareup.okhttp:okhttp-urlconnection:2.2.0'
     compile 'io.reactivex:rxjava:1.0.5'

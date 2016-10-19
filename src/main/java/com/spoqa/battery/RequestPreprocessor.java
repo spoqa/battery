@@ -9,6 +9,6 @@ import com.spoqa.battery.exceptions.ContextException;
 public interface RequestPreprocessor {
     public void validateContext(Object forWhat) throws ContextException;
 
-    public void processHttpRequest(HttpRequest req);
+    public void processHttpRequest(Object object, HttpRequest req);
 
 }

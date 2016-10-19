@@ -97,7 +97,7 @@ public final class RequestFactory {
 
         /* apply custom request processing middleware */
         if (context.getRequestPreprocessor() != null)
-            context.getRequestPreprocessor().processHttpRequest(request);
+            context.getRequestPreprocessor().processHttpRequest(object, request);
 
         return request;
     }
