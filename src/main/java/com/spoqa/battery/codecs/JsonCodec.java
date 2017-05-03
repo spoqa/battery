@@ -39,7 +39,7 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
     public byte[] serializeObject(Object o, FieldNameTranslator translator,
                                   TypeAdapterCollection typeAdapters)
             throws SerializationException {
-        JSONObject body = visitObject(o, translator, typeAdapters);
+        JSONObject body = visitObject(o, translator, typeAdapters, true);
 
         if (body != null) {
             try {
@@ -49,7 +49,7 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
             }
         }
 
-        return null;
+        return "null".getBytes();
     }
 
     @Override
@@ -63,8 +63,13 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
     }
 
     private JSONObject visitObject(Object o, FieldNameTranslator translator,
-                                   TypeAdapterCollection typeAdapters) throws SerializationException {
-        Iterable<Field> fields = CodecUtils.getAnnotatedFields(null, RequestBody.class, o.getClass());
+                                   TypeAdapterCollection typeAdapters, boolean filterAnnotated) throws SerializationException {
+        Iterable<Field> fields;
+        if (filterAnnotated) {
+            fields = CodecUtils.getAnnotatedFields(null, RequestBody.class, o.getClass());
+        } else {
+            fields = CodecUtils.getAllFields(null, o.getClass());
+        }
 
         JSONObject body = new JSONObject();
 
@@ -73,6 +78,11 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
             Class type = f.getType();
             String localName = f.getName();
             String foreignName;
+
+            if (localName.equals("serialVersionUID")) {
+                continue;
+            }
+
             if (annotation != null && annotation.value().length() > 0) {
                 foreignName = annotation.value();
             } else {
@@ -106,7 +116,7 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
                 else if (typeAdapters.contains(element.getClass()))
                     body.put(foreignName, typeAdapters.query(element.getClass()).encode(element));
                 else
-                    body.put(foreignName, visitObject(element, translator, typeAdapters));
+                    body.put(foreignName, visitObject(element, translator, typeAdapters, false));
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
                 continue;
@@ -148,7 +158,7 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
             else if (typeAdapters.contains(element.getClass()))
                 array.put(typeAdapters.query(element.getClass()).encode(element));
             else
-                array.put(visitObject(element, translator, typeAdapters));
+                array.put(visitObject(element, translator, typeAdapters, false));
         }
 
         return array;
