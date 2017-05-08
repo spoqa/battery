@@ -11,6 +11,7 @@ import com.spoqa.battery.RequestSerializer;
 import com.spoqa.battery.ResponseDeserializer;
 import com.spoqa.battery.TypeAdapterCollection;
 import com.spoqa.battery.annotations.RequestBody;
+import com.spoqa.battery.annotations.RequestObject;
 import com.spoqa.battery.exceptions.DeserializationException;
 import com.spoqa.battery.exceptions.SerializationException;
 
@@ -20,6 +21,8 @@ import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URLEncoder;
 import java.util.Iterator;
 import java.util.List;
@@ -39,7 +42,28 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
     public byte[] serializeObject(Object o, FieldNameTranslator translator,
                                   TypeAdapterCollection typeAdapters)
             throws SerializationException {
-        JSONObject body = visitObject(o, translator, typeAdapters, true);
+        List<Field> fields = CodecUtils.getAnnotatedFields(null, RequestObject.class, o.getClass());
+        List<Method> getters = CodecUtils.getAnnotatedGetterMethods(null, RequestObject.class, o.getClass());
+        int count = fields.size() + getters.size();
+        boolean filterAnnotated = true;
+
+        if (count > 1) {
+            Logger.error(TAG, String.format("Object %1$s has more than one @RequestObject fields.", o.getClass().getName()));
+        } else if (count == 1) {
+            try {
+                if (fields.size() == 1)
+                    o = fields.get(0).get(o);
+                else if (getters.size() == 1)
+                    o = getters.get(0).invoke(o);
+                filterAnnotated = false;
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+            }
+        }
+
+        JSONObject body = visitObject(o, translator, typeAdapters, filterAnnotated);
 
         if (body != null) {
             try {
@@ -65,10 +89,13 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
     private JSONObject visitObject(Object o, FieldNameTranslator translator,
                                    TypeAdapterCollection typeAdapters, boolean filterAnnotated) throws SerializationException {
         Iterable<Field> fields;
+        Iterable<Method> getters;
         if (filterAnnotated) {
             fields = CodecUtils.getAnnotatedFields(null, RequestBody.class, o.getClass());
+            getters = CodecUtils.getAnnotatedGetterMethods(null, RequestBody.class, o.getClass());
         } else {
             fields = CodecUtils.getAllFields(null, o.getClass());
+            getters = CodecUtils.getAllGetterMethods(null, o.getClass());
         }
 
         JSONObject body = new JSONObject();
@@ -121,6 +148,62 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
                 e.printStackTrace();
                 continue;
             } catch (JSONException e) {
+                e.printStackTrace();
+                continue;
+            }
+        }
+
+        android.util.Log.d("TEST", "--------------------");
+
+        for (Method m : getters) {
+            RequestBody annotation = m.getAnnotation(RequestBody.class);
+            Class type = m.getReturnType();
+            String localName = CodecUtils.normalizeGetterName(m.getName());
+            String foreignName;
+
+            if (annotation != null && annotation.value().length() > 0) {
+                foreignName = annotation.value();
+            } else {
+                if (translator != null)
+                    foreignName = translator.localToRemote(localName);
+                else
+                    foreignName = localName;
+            }
+
+            try {
+                Object element = m.invoke(o);
+
+                android.util.Log.d("TEST", m.getName());
+
+                if (element == null)
+                    body.put(foreignName, null);
+                else if (CodecUtils.isString(type))
+                    body.put(foreignName, (String) element);
+                else if (CodecUtils.isFloat(type))
+                    body.put(foreignName, (Float) element);
+                else if (CodecUtils.isDouble(type))
+                    body.put(foreignName, (Double) element);
+                else if (CodecUtils.isBoolean(type))
+                    body.put(foreignName, (Boolean) element);
+                else if (CodecUtils.isInteger(type))
+                    body.put(foreignName, (Integer) element);
+                else if (CodecUtils.isLong(type))
+                    body.put(foreignName, (Long) element);
+                else if (CodecUtils.isSubclassOf(type, List.class))
+                    body.put(foreignName, visitArray((List<Object>) element, translator, typeAdapters));
+                else if (type.isEnum())
+                    body.put(foreignName, element.toString());
+                else if (typeAdapters.contains(element.getClass()))
+                    body.put(foreignName, typeAdapters.query(element.getClass()).encode(element));
+                else
+                    body.put(foreignName, visitObject(element, translator, typeAdapters, false));
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+                continue;
+            } catch (JSONException e) {
+                e.printStackTrace();
+                continue;
+            } catch (InvocationTargetException e) {
                 e.printStackTrace();
                 continue;
             }

@@ -95,16 +95,20 @@ public class ReflectionCache {
     }
 
     private Map<AnnotatedPropertyKey, List<Field>> mAnnotatedFieldsCache;
+    private Map<AnnotatedPropertyKey, List<Method>> mAnnotatedGetterMethodsCache;
     private Map<AnnotatedPropertyKey, List<Method>> mAnnotatedSetterMethodsCache;
     private Map<Class, List<Field>> mFieldsCache;
+    private Map<Class, List<Method>> mGetterMethodsCache;
     private Map<Class, List<Method>> mSetterMethodsCache;
     private Map<FieldAnnotationKey, Annotation> mFieldAnnotationCache;
     private Map<MethodAnnotationKey, Annotation> mMethodAnnotationCache;
 
     public ReflectionCache() {
         mAnnotatedFieldsCache = new HashMap<AnnotatedPropertyKey, List<Field>>();
+        mAnnotatedGetterMethodsCache = new HashMap<AnnotatedPropertyKey, List<Method>>();
         mAnnotatedSetterMethodsCache = new HashMap<AnnotatedPropertyKey, List<Method>>();
         mFieldsCache = new HashMap<Class, List<Field>>();
+        mGetterMethodsCache = new HashMap<Class, List<Method>>();
         mSetterMethodsCache = new HashMap<Class, List<Method>>();
         mFieldAnnotationCache = new HashMap<FieldAnnotationKey, Annotation>();
         mMethodAnnotationCache = new HashMap<MethodAnnotationKey, Annotation>();
@@ -118,6 +122,18 @@ public class ReflectionCache {
 
         if (mAnnotatedFieldsCache.containsKey(key))
             return mAnnotatedFieldsCache.get(key);
+
+        return null;
+    }
+
+    public List<Method> queryCachedAnnotatedGetterMethods(Class<? extends Annotation> annotation,
+                                                          Class baseClass) {
+        AnnotatedPropertyKey key = AnnotatedPropertyKey.instance;
+        key.annotation = annotation;
+        key.baseClass = baseClass;
+
+        if (mAnnotatedGetterMethodsCache.containsKey(key))
+            return mAnnotatedGetterMethodsCache.get(key);
 
         return null;
     }
@@ -137,6 +153,13 @@ public class ReflectionCache {
     public List<Field> queryCachedFields(Class baseClass) {
         if (mFieldsCache.containsKey(baseClass))
             return mFieldsCache.get(baseClass);
+
+        return null;
+    }
+
+    public List<Method> queryCachedGetterMethods(Class baseClass) {
+        if (mGetterMethodsCache.containsKey(baseClass))
+            return mGetterMethodsCache.get(baseClass);
 
         return null;
     }
@@ -177,6 +200,11 @@ public class ReflectionCache {
         mAnnotatedFieldsCache.put(new AnnotatedPropertyKey(annotation, baseClass), fields);
     }
 
+    public void cacheAnnotatedGetterMethods(Class<? extends Annotation> annotation, Class baseClass,
+                                            List<Method> methods) {
+        mAnnotatedGetterMethodsCache.put(new AnnotatedPropertyKey(annotation, baseClass), methods);
+    }
+
     public void cacheAnnotatedSetterMethods(Class<? extends Annotation> annotation, Class baseClass,
                                             List<Method> methods) {
         mAnnotatedSetterMethodsCache.put(new AnnotatedPropertyKey(annotation, baseClass), methods);
@@ -184,6 +212,10 @@ public class ReflectionCache {
 
     public void cacheFields(Class baseClass, List<Field> fields) {
         mFieldsCache.put(baseClass, fields);
+    }
+
+    public void cacheGetterMethods(Class baseClass, List<Method> methods) {
+        mGetterMethodsCache.put(baseClass, methods);
     }
 
     public void cacheSetterMethods(Class baseClass, List<Method> methods) {

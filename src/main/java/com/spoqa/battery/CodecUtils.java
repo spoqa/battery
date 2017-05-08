@@ -330,6 +330,38 @@ public final class CodecUtils {
         return fields;
     }
 
+    public static List<Method> getAnnotatedGetterMethods(ReflectionCache cache,
+                                                         Class<? extends Annotation> annotationType,
+                                                         Class baseClass) {
+        List<Method> methods;
+
+        if (cache != null) {
+            methods = cache.queryCachedAnnotatedGetterMethods(annotationType, baseClass);
+            if (methods != null)
+                return methods;
+        }
+
+        methods = new ArrayList<Method>();
+
+        for (Method m : baseClass.getMethods()) {
+            if (m.isAnnotationPresent(annotationType)) {
+                String methodName = m.getName().toLowerCase();
+                if (m.getReturnType() == void.class || m.getParameterTypes().length != 0 ||
+                        methodName.equals("getclass")) {
+                    Logger.warn(TAG, String.format("%1$s.%2$s() is not a getter",
+                            baseClass.getName(), m.getName()));
+                    continue;
+                }
+                methods.add(m);
+            }
+        }
+
+        if (cache != null)
+            cache.cacheAnnotatedGetterMethods(annotationType, baseClass, methods);
+
+        return methods;
+    }
+
     public static List<Method> getAnnotatedSetterMethods(ReflectionCache cache,
                                                    Class<? extends Annotation> annotationType,
                                                    Class baseClass) {
@@ -356,6 +388,31 @@ public final class CodecUtils {
 
         if (cache != null)
             cache.cacheAnnotatedSetterMethods(annotationType, baseClass, methods);
+
+        return methods;
+    }
+
+    public static List<Method> getAllGetterMethods(ReflectionCache cache, Class baseClass) {
+        List<Method> methods;
+
+        if (cache != null) {
+            methods = cache.queryCachedGetterMethods(baseClass);
+            if (methods != null)
+                return methods;
+        }
+
+        methods = new ArrayList<Method>();
+
+        for (Method m : baseClass.getMethods()) {
+                /* this method automatically filter out setter methods only starting with "set-" prefix */
+            String methodName = m.getName().toLowerCase();
+            if (m.getReturnType() != void.class && m.getParameterTypes().length == 0 &&
+                    methodName.startsWith("get") && !methodName.equals("getclass"))
+                methods.add(m);
+        }
+
+        if (cache != null)
+            cache.cacheGetterMethods(baseClass, methods);
 
         return methods;
     }
@@ -476,6 +533,19 @@ public final class CodecUtils {
            return Boolean.parseBoolean((String) o);
         } else {
             throw new IncompatibleTypeException(fieldName, Boolean.class.getName(), o.toString());
+        }
+    }
+
+    public static String normalizeGetterName(String name) {
+        if (name.startsWith("get_")) {
+            return name.substring(4);
+        } else if (name.startsWith("get")) {
+            name = name.substring(3);
+            return name.substring(0, 1).toLowerCase() + name.substring(1);
+        } else if (name.startsWith("Get")) {
+            return name.substring(3);
+        } else {
+            return name;
         }
     }
 
