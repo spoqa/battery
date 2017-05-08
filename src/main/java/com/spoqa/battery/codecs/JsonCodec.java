@@ -23,7 +23,6 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.URLEncoder;
 import java.util.Iterator;
 import java.util.List;
 
@@ -136,7 +135,7 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
                     body.put(foreignName, (Integer) element);
                 else if (CodecUtils.isLong(type))
                     body.put(foreignName, (Long) element);
-                else if (CodecUtils.isSubclassOf(type, List.class))
+                else if (CodecUtils.isList(type))
                     body.put(foreignName, visitArray((List<Object>) element, translator, typeAdapters));
                 else if (type.isEnum())
                     body.put(foreignName, element.toString());
@@ -152,8 +151,6 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
                 continue;
             }
         }
-
-        android.util.Log.d("TEST", "--------------------");
 
         for (Method m : getters) {
             RequestBody annotation = m.getAnnotation(RequestBody.class);
@@ -173,8 +170,6 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
             try {
                 Object element = m.invoke(o);
 
-                android.util.Log.d("TEST", m.getName());
-
                 if (element == null)
                     body.put(foreignName, null);
                 else if (CodecUtils.isString(type))
@@ -189,7 +184,7 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
                     body.put(foreignName, (Integer) element);
                 else if (CodecUtils.isLong(type))
                     body.put(foreignName, (Long) element);
-                else if (CodecUtils.isSubclassOf(type, List.class))
+                else if (CodecUtils.isList(type))
                     body.put(foreignName, visitArray((List<Object>) element, translator, typeAdapters));
                 else if (type.isEnum())
                     body.put(foreignName, element.toString());
@@ -234,7 +229,7 @@ public class JsonCodec implements RequestSerializer, ResponseDeserializer {
                 array.put((Integer) element);
             else if (CodecUtils.isLong(type))
                 array.put((Long) element);
-            else if (CodecUtils.isSubclassOf(type, List.class))
+            else if (CodecUtils.isList(type))
                 array.put(visitArray((List<Object>) element, translator, typeAdapters));
             else if (type.isEnum())
                 array.put(element.toString());

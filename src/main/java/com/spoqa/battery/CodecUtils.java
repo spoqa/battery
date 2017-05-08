@@ -64,6 +64,15 @@ public final class CodecUtils {
         return list;
     }
 
+    public static boolean implements_(Class clazz, Class what) {
+        for (Class interface_ : clazz.getInterfaces()) {
+            if (interface_ == what)
+                return true;
+        }
+
+        return false;
+    }
+
     public static boolean isSubclassOf(Class clazz, Class what) {
         while (clazz != null) {
             if (clazz == what)
@@ -149,11 +158,11 @@ public final class CodecUtils {
     }
 
     public static boolean isList(Class clazz) {
-        return isSubclassOf(clazz, PRIMITIVE_TYPE_LIST);
+        return implements_(clazz, PRIMITIVE_TYPE_LIST);
     }
 
     public static boolean isMap(Class clazz) {
-        return isSubclassOf(clazz, PRIMITIVE_TYPE_MAP);
+        return implements_(clazz, PRIMITIVE_TYPE_MAP);
     }
 
     public static boolean isPrimitive(Class clazz) {
