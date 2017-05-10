@@ -325,6 +325,8 @@ public final class ObjectBuilder {
                         m.invoke(dest, CodecUtils.parseFloat(fieldName, value));
                     } else if (CodecUtils.isDouble(fieldType)) {
                         m.invoke(dest, CodecUtils.parseDouble(fieldName, value));
+                    } else if (fieldType.isEnum()) {
+                        m.invoke(dest, CodecUtils.parseEnum(fieldType, value.toString()));
                     } else {
                         if (!CodecUtils.shouldBeExcluded(fieldType)) {
                         /* or it should be a POJO... */
@@ -334,9 +336,6 @@ public final class ObjectBuilder {
                             m.invoke(dest, newObject);
                         }
                     }
-                } else {
-                    if (!CodecUtils.isPrimitive(fieldType))
-                        m.invoke(dest, null);
                 }
             }
         } catch (Exception e) {

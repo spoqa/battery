@@ -185,9 +185,9 @@ public final class CodecUtils {
             Field field = clazz.getField(fieldName);
             Class declaringType = field.getType();
             int genericTypePosition;
-            if (isSubclassOf(declaringType, PRIMITIVE_TYPE_LIST)) {
+            if (implements_(declaringType, PRIMITIVE_TYPE_LIST)) {
                 genericTypePosition = 0;
-            } else if (isSubclassOf(declaringType, PRIMITIVE_TYPE_MAP)) {
+            } else if (implements_(declaringType, PRIMITIVE_TYPE_MAP)) {
                 genericTypePosition = 1;
             } else {
                 Logger.error(TAG, String.format("Field %1$s is neither list nor map.", declaringType.getName()));
@@ -276,9 +276,9 @@ public final class CodecUtils {
         try {
             Method method = clazz.getMethod(methodName, paramType);
             int genericTypePosition;
-            if (isSubclassOf(paramType, PRIMITIVE_TYPE_LIST)) {
+            if (implements_(paramType, PRIMITIVE_TYPE_LIST)) {
                 genericTypePosition = 0;
-            } else if (isSubclassOf(paramType, PRIMITIVE_TYPE_MAP)) {
+            } else if (implements_(paramType, PRIMITIVE_TYPE_MAP)) {
                 genericTypePosition = 1;
             } else {
                 Logger.error(TAG, String.format("Field %1$s is neither list nor map.", paramType.getName()));
