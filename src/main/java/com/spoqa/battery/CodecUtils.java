@@ -600,7 +600,12 @@ public final class CodecUtils {
         return null;
     }
 
-    public static Object getResponseObject(ReflectionCache cache, Object object, boolean overwrite) throws RpcException {
+    public static class ResponseWithTypeParameters {
+        public Object object;
+        public Type typeVariables[];
+    }
+
+    public static ResponseWithTypeParameters getResponseObject(ReflectionCache cache, Object object, boolean overwrite) throws RpcException {
         List<Field> responseObjects = CodecUtils.getAnnotatedFields(cache, ResponseObject.class,
                 object.getClass());
 
@@ -611,6 +616,7 @@ public final class CodecUtils {
                     object.getClass().getName()));
             throw e;
         } else {
+            ResponseWithTypeParameters ret = new ResponseWithTypeParameters();
             Field destField = responseObjects.get(0);
             try {
                 List<Field> responseFields = CodecUtils.getAnnotatedFields(cache, Response.class, object.getClass());
@@ -621,12 +627,18 @@ public final class CodecUtils {
                     throw e;
                 }
 
-                Object dest = destField.get(object);
-                if (dest == null || overwrite) {
-                    dest = destField.getType().newInstance();
-                    destField.set(object, dest);
+                Type genericType = destField.getGenericType();
+                if (genericType != null && genericType instanceof ParameterizedType) {
+                    ParameterizedType pt = (ParameterizedType) genericType;
+                    ret.typeVariables = pt.getActualTypeArguments();
                 }
-                return dest;
+
+                ret.object = destField.get(object);
+                if (ret.object == null || overwrite) {
+                    ret.object = destField.getType().newInstance();
+                    destField.set(object, ret.object);
+                }
+                return ret;
             } catch (InstantiationException e) {
                 throw new RpcException(String.format("Could not instantiate ResponseObject %1$s",
                         destField.getName()));

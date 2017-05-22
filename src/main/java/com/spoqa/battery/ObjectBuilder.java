@@ -14,6 +14,9 @@ import com.spoqa.battery.exceptions.RpcException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -58,13 +61,14 @@ public final class ObjectBuilder {
 
         try {
             boolean filterByAnnotation = false;
-            Object responseObject = CodecUtils.getResponseObject(cache, object, true);
+            CodecUtils.ResponseWithTypeParameters rt = CodecUtils.getResponseObject(cache, object, true);
+            Object responseObject = rt.object;
             if (responseObject == null) {
                 responseObject = object;
                 filterByAnnotation = true;
             }
             deserializeObject(cache, sDeserializerMap.get(mime), input, responseObject,
-                    translator, typeAdapters, filterByAnnotation);
+                    translator, typeAdapters, filterByAnnotation, rt.typeVariables);
         } catch (RpcException e) {
             throw new DeserializationException(e);
         }
@@ -79,31 +83,34 @@ public final class ObjectBuilder {
 
     private static void deserializeObject(ReflectionCache cache, ResponseDeserializer deserializer,
                                           String input, Object object, FieldNameTranslator translator,
-                                          TypeAdapterCollection typeAdapters, boolean filterByAnnotation)
+                                          TypeAdapterCollection typeAdapters, boolean filterByAnnotation,
+                                          Type[] genericTypes)
             throws DeserializationException {
         /* Let's assume the root element is always an object */
         Object internalObject = deserializer.parseInput(input);
 
         visitObject(cache, deserializer, internalObject, object,
-                translator, typeAdapters, filterByAnnotation);
+                translator, typeAdapters, filterByAnnotation, genericTypes);
     }
 
     private static void visitObject(ReflectionCache cache, ResponseDeserializer deserializer,
                                     Object internalObject, Object dest, FieldNameTranslator translator,
                                     TypeAdapterCollection typeAdapters,
-                                    boolean filterByAnnotation)
+                                    boolean filterByAnnotation, Type[] genericTypes)
             throws DeserializationException {
         List<Field> fields;
         List<Method> setters;
+        Class clazz = dest.getClass();
 
         if (filterByAnnotation) {
-            fields = CodecUtils.getAnnotatedFields(cache, Response.class, dest.getClass());
-            setters = CodecUtils.getAnnotatedSetterMethods(cache, Response.class, dest.getClass());
+            fields = CodecUtils.getAnnotatedFields(cache, Response.class, clazz);
+            setters = CodecUtils.getAnnotatedSetterMethods(cache, Response.class, clazz);
         } else {
-            fields = CodecUtils.getAllFields(cache, dest.getClass());
-            setters = CodecUtils.getAllSetterMethods(cache, dest.getClass());
+            fields = CodecUtils.getAllFields(cache, clazz);
+            setters = CodecUtils.getAllSetterMethods(cache, clazz);
         }
 
+        TypeVariable tvs[] = clazz.getTypeParameters();
         try {
             /* search fields */
             for (Field f : fields) {
@@ -112,6 +119,17 @@ public final class ObjectBuilder {
                 boolean explicit = false;
                 boolean hasValue = false;
                 Class fieldType = f.getType();
+
+                Type genericType = f.getGenericType();
+                if (genericType instanceof TypeVariable && genericTypes != null &&
+                        genericTypes.length > 0 && tvs.length > 0) {
+                    for (int i = 0; i < tvs.length; ++i) {
+                        if (genericType.equals(tvs[i])) {
+                            fieldType = (Class) genericTypes[i];
+                            break;
+                        }
+                    }
+                }
 
                 if (Config.DEBUG_DUMP_RESPONSE) {
                     Logger.debug(TAG, "read field " + fieldName);
@@ -216,9 +234,15 @@ public final class ObjectBuilder {
                     } else {
                         if (!CodecUtils.shouldBeExcluded(fieldType)) {
                             /* or it should be a POJO... */
+                            Type[] typeArguments = null;
+                            if (genericType instanceof ParameterizedType) {
+                                ParameterizedType pt = (ParameterizedType) genericType;
+                                typeArguments = pt.getActualTypeArguments();
+                            }
+
                             Object newObject = fieldType.newInstance();
                             visitObject(cache, deserializer, value, newObject, translator,
-                                    typeAdapters, false);
+                                    typeAdapters, false, typeArguments);
                             f.set(dest, newObject);
                         }
                     }
@@ -235,6 +259,17 @@ public final class ObjectBuilder {
                 boolean explicit = false;
                 boolean hasValue = false;
                 Class fieldType = m.getParameterTypes()[0];
+
+                Type genericType = m.getGenericParameterTypes()[0];
+                if (genericType instanceof TypeVariable && genericTypes != null &&
+                        genericTypes.length > 0 && tvs.length > 0) {
+                    for (int i = 0; i < tvs.length; ++i) {
+                        if (genericType.equals(tvs[i])) {
+                            fieldType = (Class) genericTypes[i];
+                            break;
+                        }
+                    }
+                }
 
                 if (Config.DEBUG_DUMP_RESPONSE) {
                     Logger.debug(TAG, "read method " + fieldName);
@@ -329,10 +364,16 @@ public final class ObjectBuilder {
                         m.invoke(dest, CodecUtils.parseEnum(fieldType, value.toString()));
                     } else {
                         if (!CodecUtils.shouldBeExcluded(fieldType)) {
-                        /* or it should be a POJO... */
+                            /* or it should be a POJO... */
+                            Type[] typeArguments = null;
+                            if (genericType instanceof ParameterizedType) {
+                                ParameterizedType pt = (ParameterizedType) genericType;
+                                typeArguments = pt.getActualTypeArguments();
+                            }
+
                             Object newObject = fieldType.newInstance();
                             visitObject(cache, deserializer, value, newObject, translator,
-                                    typeAdapters, false);
+                                    typeAdapters, false, typeArguments);
                             m.invoke(dest, newObject);
                         }
                     }
@@ -367,7 +408,7 @@ public final class ObjectBuilder {
                     /* TODO implement nested map */
                 } else if (deserializer.isObject(element.getClass())) {
                     Object o = innerType.newInstance();
-                    visitObject(cache, deserializer, element, o, translator, typeAdapters, false);
+                    visitObject(cache, deserializer, element, o, translator, typeAdapters, false, null);
                     add.invoke(output, o);
                 } else {
                     Object newElem = element;
