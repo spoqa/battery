@@ -180,10 +180,34 @@ public final class CodecUtils {
         return false;
     }
 
-    public static Class getGenericTypeOfField(Class clazz, String fieldName) {
+    public static Class getGenericTypeOfField(Class clazz, String fieldName, Type[] genericTypes) {
         try {
             Field field = clazz.getField(fieldName);
+            Type genericType = field.getGenericType();
             Class declaringType = field.getType();
+            TypeVariable[] tvs = clazz.getTypeParameters();
+            ParameterizedType type = null;
+            if (genericType instanceof TypeVariable && genericTypes != null && genericTypes.length > 0 &&
+                    tvs.length > 0) {
+                for (int i = 0; i < tvs.length; ++i) {
+                    if (genericType.equals(tvs[i])) {
+                        if (genericTypes[i] instanceof ParameterizedType) {
+                            type = (ParameterizedType) genericTypes[i];
+                            declaringType = (Class) type.getRawType();
+                        } else {
+                            type = (ParameterizedType) genericType;
+                            declaringType = (Class) genericTypes[i];
+                        }
+                        break;
+                    }
+                }
+                if (declaringType == null) {
+                    Logger.error(TAG, "No generic type available for " + clazz.getName());
+                    return null;
+                }
+            } else {
+                type = (ParameterizedType) genericType;
+            }
             int genericTypePosition;
             if (implements_(declaringType, PRIMITIVE_TYPE_LIST)) {
                 genericTypePosition = 0;
@@ -193,7 +217,6 @@ public final class CodecUtils {
                 Logger.error(TAG, String.format("Field %1$s is neither list nor map.", declaringType.getName()));
                 return null;
             }
-            ParameterizedType type = (ParameterizedType) field.getGenericType();
             Object o = type.getActualTypeArguments()[genericTypePosition];
             if (o instanceof TypeVariable) {
                 return resolveActualTypeArgs(clazz, (TypeVariable) o);

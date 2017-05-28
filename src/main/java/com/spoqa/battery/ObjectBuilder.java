@@ -125,7 +125,19 @@ public final class ObjectBuilder {
                         genericTypes.length > 0 && tvs.length > 0) {
                     for (int i = 0; i < tvs.length; ++i) {
                         if (genericType.equals(tvs[i])) {
-                            fieldType = (Class) genericTypes[i];
+                            if (genericTypes[i] instanceof ParameterizedType) {
+                                ParameterizedType inner = (ParameterizedType) genericTypes[i];
+                                Type[] innerTypeArgs = inner.getActualTypeArguments();
+                                Type[] ts = new Type[tvs.length + innerTypeArgs.length];
+                                for (int j = 0; j < genericTypes.length; ++j)
+                                    ts[j] = genericTypes[j];
+                                for (int j = 0; j < innerTypeArgs.length; ++j)
+                                    ts[j + genericTypes.length] = innerTypeArgs[j];
+                                genericTypes = ts;
+                                fieldType = (Class) inner.getRawType();
+                            } else {
+                                fieldType = (Class) genericTypes[i];
+                            }
                             break;
                         }
                     }
@@ -210,7 +222,7 @@ public final class ObjectBuilder {
                         }
                         List newList = ArrayList.class.newInstance();
                         visitArray(cache, deserializer, value, newList,
-                                CodecUtils.getGenericTypeOfField(dest.getClass(), f.getName()),
+                                CodecUtils.getGenericTypeOfField(dest.getClass(), f.getName(), genericTypes),
                                 translator, typeAdapters);
                         f.set(dest, newList);
                     } else if (CodecUtils.isMap(fieldType)) {
