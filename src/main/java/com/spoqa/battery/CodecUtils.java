@@ -158,11 +158,11 @@ public final class CodecUtils {
     }
 
     public static boolean isList(Class clazz) {
-        return implements_(clazz, PRIMITIVE_TYPE_LIST);
+        return implements_(clazz, PRIMITIVE_TYPE_LIST) || clazz == PRIMITIVE_TYPE_LIST || clazz == ArrayList.class;
     }
 
     public static boolean isMap(Class clazz) {
-        return implements_(clazz, PRIMITIVE_TYPE_MAP);
+        return implements_(clazz, PRIMITIVE_TYPE_MAP) || clazz == PRIMITIVE_TYPE_MAP || clazz == HashMap.class;
     }
 
     public static boolean isPrimitive(Class clazz) {
@@ -209,9 +209,9 @@ public final class CodecUtils {
                 type = (ParameterizedType) genericType;
             }
             int genericTypePosition;
-            if (implements_(declaringType, PRIMITIVE_TYPE_LIST)) {
+            if (isList(declaringType)) {
                 genericTypePosition = 0;
-            } else if (implements_(declaringType, PRIMITIVE_TYPE_MAP)) {
+            } else if (isMap(declaringType)) {
                 genericTypePosition = 1;
             } else {
                 Logger.error(TAG, String.format("Field %1$s is neither list nor map.", declaringType.getName()));
@@ -299,18 +299,18 @@ public final class CodecUtils {
         try {
             Method method = clazz.getMethod(methodName, paramType);
             int genericTypePosition;
-            if (implements_(paramType, PRIMITIVE_TYPE_LIST)) {
+            if (isList(paramType)) {
                 genericTypePosition = 0;
-            } else if (implements_(paramType, PRIMITIVE_TYPE_MAP)) {
+            } else if (isMap(paramType)) {
                 genericTypePosition = 1;
             } else {
-                Logger.error(TAG, String.format("Field %1$s is neither list nor map.", paramType.getName()));
+                Logger.error(TAG, String.format("Method %1$s is neither list nor map.", paramType.getName()));
                 return null;
             }
             ParameterizedType type = (ParameterizedType) method.getGenericParameterTypes()[0];
             return (Class) type.getActualTypeArguments()[genericTypePosition];
         } catch (NoSuchMethodException e) {
-            Logger.error(TAG, String.format("No such field %1$s in %2$s", methodName, clazz.getName()));
+            Logger.error(TAG, String.format("No such method %1$s in %2$s", methodName, clazz.getName()));
             e.printStackTrace();
             return null;
         }
