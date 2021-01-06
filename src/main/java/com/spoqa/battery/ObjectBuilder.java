@@ -60,15 +60,14 @@ public final class ObjectBuilder {
         ReflectionCache cache = new ReflectionCache();
 
         try {
-            boolean filterByAnnotation = false;
             CodecUtils.ResponseWithTypeParameters rt = CodecUtils.getResponseObject(cache, object, true);
-            Object responseObject = rt.object;
-            if (responseObject == null) {
-                responseObject = object;
-                filterByAnnotation = true;
+            if (rt == null) {
+                deserializeObject(cache, sDeserializerMap.get(mime), input, object,
+                        translator, typeAdapters, true, null);
+            } else {
+                deserializeObject(cache, sDeserializerMap.get(mime), input, rt.object,
+                        translator, typeAdapters, false, rt.typeVariables);
             }
-            deserializeObject(cache, sDeserializerMap.get(mime), input, responseObject,
-                    translator, typeAdapters, filterByAnnotation, rt.typeVariables);
         } catch (RpcException e) {
             throw new DeserializationException(e);
         }
